@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="lo">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miyamoto AC - Salary Viewer (Mobile Ready)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* === App UI (Dark Theme for Internal Tools) === */
+        :root {
+            --bg-dark: #121212;
+            --text-light: #e0e0e0;
+            --miyamoto-blue: #0097E0;
+            --paper-white: #ffffff;
+            --text-dark: #333333;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Noto Sans Lao', sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .app-header {
+            max-width: 100%;
+            width: 100%;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #1e1e1e;
+            border-left: 4px solid var(--miyamoto-blue);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .app-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .app-header p {
+            margin: 0;
+            color: #aaa;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        /* === Payslip Document (Fluid for Screen, Fixed for Print) === */
+        .payslip-container {
+            background-color: var(--paper-white);
+            color: var(--text-dark);
+            width: 100%;
+            max-width: 100%;
+            /* Fluid max-width for screens */
+            padding: 30px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            margin: 0 auto;
+        }
+
+        .slip-header {
+            display: flex;
+            border: 2px solid #000;
+            min-height: 100px;
+            margin-bottom: 25px;
+        }
+
+        .slip-logo {
+            flex: 0 0 35%;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 2px solid #000;
+            background: #fff;
+        }
+
+        .slip-logo img {
+            max-width: 100%;
+            max-height: 80px;
+            object-fit: contain;
+        }
+
+        .slip-title {
+            flex: 1;
+            background-color: var(--miyamoto-blue);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .slip-title h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .slip-title h2 {
+            margin: 5px 0 0 0;
+            font-size: 16px;
+            font-weight: normal;
+        }
+
+        .emp-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 15px;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .emp-info .val {
+            text-align: right;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .section-title {
+            text-align: center;
+            font-weight: bold;
+            color: #1a5276;
+            margin: 20px 0 15px 0;
+            font-size: 16px;
+        }
+
+        .line-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 4px;
+        }
+
+        .line-item .lbl {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .line-item .lbl-num {
+            width: 25px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .val-col {
+            text-align: right;
+            width: 120px;
+            flex-shrink: 0;
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-top: 15px;
+            padding-top: 5px;
+            font-size: 15px;
+        }
+
+        .total-val {
+            text-align: right;
+            width: 120px;
+            border-top: 1px solid #000;
+            border-bottom: 3px double #000;
+            padding: 5px 0;
+        }
+
+        .net-pay {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #1a5276;
+        }
+
+        .net-pay .total-val {
+            border-top: 1px solid #000;
+            border-bottom: 3px double #000;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            font-weight: bold;
+            color: #1a5276;
+            font-size: 14px;
+        }
+
+        /* === Upload Fallback UI === */
+        .upload-box {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .upload-box h2 {
+            color: #b71c1c;
+            margin-bottom: 10px;
+        }
+
+        .upload-box p {
+            color: #555;
+            margin: 6px 0;
+        }
+
+        .upload-box .field-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .upload-box label {
+            font-size: 13px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .upload-box input[type="text"] {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 160px;
+            text-align: center;
+        }
+
+        .upload-box input[type="file"] {
+            margin-top: 4px;
+        }
+
+        .upload-box button {
+            margin-top: 10px;
+            background: var(--miyamoto-blue);
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Noto Sans Lao', sans-serif;
+        }
+
+        .upload-box button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        .upload-status {
+            margin-top: 18px;
+            font-size: 13px;
+            color: #333;
+            white-space: pre-line;
+            text-align: left;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .upload-status a {
+            color: var(--miyamoto-blue);
+            font-weight: bold;
+        }
+
+        /* === Mobile Responsiveness === */
+        @media screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .payslip-container {
+                padding: 15px;
+            }
+
+            .slip-header {
+                flex-direction: column;
+            }
+
+            .slip-logo {
+                border-right: none;
+                border-bottom: 2px solid #000;
+                padding: 15px;
+            }
+
+            .slip-title h1 {
+                font-size: 18px;
+            }
+
+            .slip-title h2 {
+                font-size: 14px;
+            }
+
+            /* Adjust grid for tight mobile screens */
+            .emp-info {
+                grid-template-columns: 100px 1fr;
+                font-size: 12px;
+            }
+
+            .line-item {
+                font-size: 12px;
+            }
+
+            .val-col,
+            .total-val {
+                width: 90px;
+            }
+
+            .line-item .lbl-num {
+                width: 20px;
+            }
+        }
+
+        /* === Dashboard UI === */
+        .dashboard-container {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 200px;
+            max-width: 300px;
+            font-family: inherit;
+        }
+
+        .dashboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+            /* Force scroll on small screens */
+        }
+
+        .dashboard-table th,
+        .dashboard-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .dashboard-table th {
+            background-color: var(--miyamoto-blue);
+            color: #fff;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .send-btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover {
+            background: #1ebd5c;
+        }
+
+        .sent-icon {
+            color: #25D366;
+            font-weight: bold;
+        }
+
+        /* === Modal Styles === */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            /* Center the popup and let the inner payslip scroll on its own
+               (the modal backdrop itself never scrolls the page). */
+            overflow: hidden;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* When opened (display:flex) the modal centers content vertically+horizontally. */
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: transparent;
+            margin: 0;
+            max-width: 460px;
+            width: 100%;
+            position: relative;
+            /* Keep the whole popup (close button + payslip) inside the viewport.
+               92vh leaves room for the modal backdrop padding. */
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* The payslip itself sits in a scroll-free shell that fits the available height. */
+        #modal-payslip-wrapper {
+            overflow: hidden;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        #modal-payslip-wrapper .payslip-container {
+            padding: 15px;
+            margin: 0 auto;
+            line-height: 1.2;
+            /* Allow the slip to scale down uniformly on short screens so the
+               entire document stays visible without scrolling. transform-origin
+               keeps it pinned to the top so the header stays in place. */
+            transform-origin: top center;
+        }
+
+        #modal-payslip-wrapper .slip-header {
+            min-height: 60px;
+            margin-bottom: 10px;
+            border-width: 1px;
+        }
+
+        #modal-payslip-wrapper .slip-logo img {
+            max-height: 50px;
+        }
+
+        #modal-payslip-wrapper .slip-title {
+            padding: 8px;
+        }
+
+        #modal-payslip-wrapper .slip-title h1 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        #modal-payslip-wrapper .slip-title h2 {
+            font-size: 12px;
+            margin: 2px 0 0 0;
+        }
+
+        #modal-payslip-wrapper .emp-info {
+            margin-bottom: 10px;
+            gap: 4px 10px;
+            font-size: 12px;
+        }
+
+        #modal-payslip-wrapper .section-title {
+            font-size: 13px;
+            margin: 8px 0 4px 0;
+        }
+
+        #modal-payslip-wrapper .line-item {
+            font-size: 12px;
+            margin-bottom: 2px;
+            padding-bottom: 2px;
+        }
+
+        #modal-payslip-wrapper .total-line {
+            margin-top: 6px;
+            padding-top: 2px;
+            font-size: 12px;
+        }
+
+        #modal-payslip-wrapper .total-val {
+            padding: 2px 0;
+        }
+
+        #modal-payslip-wrapper .net-pay {
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        #modal-payslip-wrapper .signatures {
+            margin-top: 20px;
+            font-size: 12px;
+        }
+
+        .close-btn {
+            color: #fff;
+            /* Float was breaking the flex column layout. Anchor to the top-right
+               corner of the popup instead, so it never pushes the payslip down. */
+            position: absolute;
+            top: -14px;
+            right: -8px;
+            z-index: 2;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #b71c1c;
+            padding: 2px 10px;
+            border-radius: 4px;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            background: #d32f2f;
+            color: #fff;
+        }
+
+        /* === Print Styles (Forces A4 formatting) === */
+        @media print {
+            @page {
+                margin: 0;
+                size: A4 portrait;
+            }
+
+            body {
+                background: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .app-header {
+                display: none;
+            }
+
+            .payslip-container {
+                box-shadow: none;
+                width: 210mm;
+                /* Force exact A4 width */
+                min-height: 297mm;
+                padding: 20mm;
+                margin: 0;
+                max-width: none;
+            }
+
+            .slip-header {
+                flex-direction: row;
+            }
+
+            .slip-logo {
+                border-right: 2px solid #000;
+                border-bottom: none;
+            }
+
+            .emp-info {
+                grid-template-columns: 1fr 1fr;
+                font-size: 14px;
+            }
+
+            .line-item {
+                font-size: 14px;
+                border-bottom: none;
+            }
+
+            .val-col,
+            .total-val {
+                width: 150px;
+            }
+        }
+    </style>
+
+    <!-- SheetJS (browser build) - must load before the module script below runs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+    <div class="payslip-container" id="payslip-container">
+
+        <div class="slip-header">
+            <div class="slip-logo">
+                <img src="data:image/png;base64,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"
+                    alt="Miyamoto AC Logo">
+            </div>
+            <div class="slip-title">
+                <h1>ໃບແຈ້ງເງິນເດືອນ</h1>
+                <h2 id="slip-month">ປະຈຳເດືອນ ມິຖຸນາ 2026</h2>
+            </div>
+        </div>
+
+        <div class="emp-info">
+            <div>1 ລາຍຊື່ພະນັກງານ</div>
+            <div class="val" id="emp-name">Employee Name</div>
+
+            <div>2 ຕຳແໜ່ງ</div>
+            <div class="val" id="emp-position">Position</div>
+
+            <div>3 ລະຫັດ</div>
+            <div class="val" id="emp-id">Employee ID</div>
+        </div>
+
+        <div class="section-title">ລາຍຮັບ</div>
+
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">1</span> ເງິນເດືອນພື້ນຖານ Basic Salary</div>
+            <div class="val-col" id="earn-basic">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">2</span> ເງິນລ່ວງເວລາ Overtime</div>
+            <div class="val-col" id="earn-ot">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">3</span> ເງິນກາງຄືນ</div>
+            <div class="val-col" id="earn-night">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">4</span> ເງິນຄວາມປອດໄພ</div>
+            <div class="val-col" id="earn-safety"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">5</span> ເງິນຄວາມຮ່ວມມື</div>
+            <div class="val-col" id="earn-coop"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">6</span> -</div>
+            <div class="val-col"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">7</span> ເງິນຄວາມສະຫຍັນ</div>
+            <div class="val-col" id="earn-diligence"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">8</span> ເງິນຄວາມສະອາດ5ສ</div>
+            <div class="val-col" id="earn-5s"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">9</span> ເງິນຄ່າທີ່ພັກ</div>
+            <div class="val-col" id="earn-housing"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">10</span> ເງິນເປົ້າໝາຍການຜະລິດ</div>
+            <div class="val-col" id="earn-target"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">11</span> ເງິນຕຳແໜ່ງ</div>
+            <div class="val-col" id="earn-position"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">12</span> ເງິນນ້ຳມັນ</div>
+            <div class="val-col" id="earn-gas"></div>
+        </div>
+
+        <div class="total-line">
+            <div>ລວມຮັບ</div>
+            <div class="total-val" id="total-earnings">0</div>
+        </div>
+
+        <br>
+
+        <div class="section-title">ລາຍຈ່າຍ / ຫັກ</div>
+
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">1</span> ປະກັນສັງຄົມ</div>
+            <div class="val-col" id="deduct-sso"></div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">2</span> ມາຊ້າ 1-10 ນາທີ</div>
+            <div class="val-col" id="deduct-late1">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">3</span> ມາຊ້າ 10-30 ນາທີ</div>
+            <div class="val-col" id="deduct-late2">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">4</span> ມາຊ້າ 30 ນາທີຂຶ້ນໄປ</div>
+            <div class="val-col" id="deduct-late3">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">5</span> ເງິນຂາດວຽກ</div>
+            <div class="val-col" id="deduct-absent">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">6</span> ບໍ່ເຕັມເດືອນ</div>
+            <div class="val-col" id="deduct-incomplete">0</div>
+        </div>
+        <div class="line-item">
+            <div class="lbl"><span class="lbl-num">7</span> ພາສີລາຍໄດ້ສ່ວນບຸກຄົນ 5%</div>
+            <div class="val-col" id="deduct-tax">0</div>
+        </div>
+
+        <div class="total-line">
+            <div>ລວມຫັກ</div>
+            <div class="total-val" id="total-deductions">0</div>
+        </div>
+
+        <div class="total-line net-pay">
+            <div>ລວມຮັບສຸດທິ</div>
+            <div class="total-val" id="net-pay">0</div>
+        </div>
+
+        <div class="signatures">
+            <div>Requestor</div>
+            <div>HR department</div>
+        </div>
+
+    </div>
+
+    <div id="payslip-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="modal-payslip-wrapper" style="background:transparent; clear:both;"></div>
+        </div>
+    </div>
+
+    <script>
+
+        function currentPeriodId() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, "0");
+            return `${yyyy}${mm}`;
+        }
+
+        // ==============================
+        // Payslip lookup (existing flow)
+        // ==============================
+        async function loadPayslip(employeeId, periodId) {
+            try {
+                const localData = localStorage.getItem(`miyamoto_salary_${periodId}`);
+                if (!localData) {
+                    console.warn("No local data found for this period.");
+                    return;
+                }
+                const employees = JSON.parse(localData);
+                const data = employees.find(e => String(e['Employee ID']) === String(employeeId));
+
+                if (data) {
+                    const formatNum = (val) => {
+                        if (val === undefined || val === null) return '0';
+                        // Normalise whitespace and treat dashes (e.g. " -   ") as blank,
+                        // since the Excel export uses "-" for empty money cells.
+                        const cleaned = String(val).trim();
+                        if (cleaned === '' || cleaned === '-' || cleaned.replace(/-/g, '').trim() === '') return '0';
+                        // Excel values may contain grouping commas/spaces (" 13,613,400 "),
+                        // which Number() would reject as NaN — strip them before parsing.
+                        const num = Number(cleaned.replace(/,/g, ''));
+                        return isNaN(num) ? val : num.toLocaleString('en-US');
+                    };
+
+                    const laoMonths = {
+                        "01": "ມັງກອນ", "02": "ກຸມພາ", "03": "ມີນາ", "04": "ເມສາ",
+                        "05": "ພຶດສະພາ", "06": "ມິຖຸນາ", "07": "ກໍລະກົດ", "08": "ສິງຫາ",
+                        "09": "ກັນຍາ", "10": "ຕຸລາ", "11": "ພະຈິກ", "12": "ທັນວາ"
+                    };
+                    const year = periodId.substring(0, 4);
+                    const monthKey = periodId.substring(4, 6);
+                    const displayMonth = laoMonths[monthKey] ? `${laoMonths[monthKey]} ${year}` : 'ບໍ່ລະບຸ (Unknown)';
+
+                    document.getElementById('slip-month').innerText = `ປະຈຳເດືອນ ${displayMonth}`;
+                    document.getElementById('emp-name').innerText = data['ຊື່ ແລະ ນາສະກຸນ Name and Surname'] || data['Employee Name'] || '';
+                    document.getElementById('emp-position').innerText = data['ຕຳແໜ່ງ Position'] || data['Position'] || '';
+                    document.getElementById('emp-id').innerText = data['ລະຫັດພງ Emplyee ID'] || data['Employee ID'] || '';
+
+                    document.getElementById('earn-basic').innerText = formatNum(data['ເງິນເດືອນພື້ນຖານ Basic Salary'] || data['Basic Salary']);
+                    document.getElementById('earn-ot').innerText = formatNum(data['ເງິນລ່ວງເວລາ Overtime'] || data['Overtime Pay']);
+                    document.getElementById('earn-night').innerText = formatNum(data['ເງິນກະກາງຄືນ'] || data['Night Shift Allowance']);
+                    document.getElementById('earn-safety').innerText = formatNum(data['ເງິນຄວາມປອດໄພ'] || data['Safety Allowance']);
+                    document.getElementById('earn-coop').innerText = formatNum(data['ເງິນຄວາມ ຮວມມື'] || data['Cooperation Allowance']);
+                    document.getElementById('earn-diligence').innerText = formatNum(data['ເງິນຄວາມຂະຫຍັນ'] || data['Diligence Allowance']);
+                    document.getElementById('earn-5s').innerText = formatNum(data['ເງິນຄວາມສະອາດ5ສ'] || data['5S Allowance']);
+                    document.getElementById('earn-housing').innerText = formatNum(data['ເງິນຄ່າທີ່ພັກ'] || data['Housing Allowance']);
+                    document.getElementById('earn-target').innerText = formatNum(data['ເງິນເປົ້າການຜະລິດ'] || data['Production Target Allowance']);
+                    document.getElementById('earn-position').innerText = formatNum(data['ເງີນຕຳແໜ່ງ'] || data['Position Allowance']);
+                    document.getElementById('earn-gas').innerText = formatNum(data['ເງິນນ້ຳມັນ'] || data['Fuel Allowance']);
+                    document.getElementById('total-earnings').innerText = formatNum(data['ລວມຮັບ'] || data['Total Earnings']);
+
+                    const sso = (data['ປະກັນສັ່ງຄົມ'] || data['Social Security'] || 0);
+                    const late1 = (data['ມາຊ້າ 1-10 ນາທີ'] || data['Late Penalty (1-10 mins)'] || 0);
+                    const late2 = (data['ມາຊ້າ 10-30 ນາທີ'] || data['Late Penalty (10-30 mins)'] || 0);
+                    const late3 = (data['ມາຊ້າ 30 ນາທີຂື້ນໄປ'] || data['Late Penalty (30+ mins)'] || 0);
+                    const absent = (data['ເງິນຂາດວຽກ'] || data['Absence Deduction'] || 0);
+                    const incomplete = (data['ບໍ່ເຕັມເດືອນ'] || data['incomplete Month Deduction'] || 0);
+                    const tax = (data['ພາສີ 5%'] || data['Income Tax (5%)'] || 0);
+                    // const sumDeductions = sso + late1 + late2 + late3 + absent + incomplete + tax;
+                    const sumDeductions = data['ລວມຫັກ'] || data['Total Deductions'] || 0;
+
+                    document.getElementById('deduct-sso').innerText = formatNum(sso);
+                    document.getElementById('deduct-late1').innerText = formatNum(late1);
+                    document.getElementById('deduct-late2').innerText = formatNum(late2);
+                    document.getElementById('deduct-late3').innerText = formatNum(late3);
+                    document.getElementById('deduct-absent').innerText = formatNum(absent);
+                    document.getElementById('deduct-incomplete').innerText = formatNum(incomplete);
+                    document.getElementById('deduct-tax').innerText = formatNum(tax);
+                    document.getElementById('total-deductions').innerText = formatNum(sumDeductions);
+
+                    document.getElementById('net-pay').innerText = formatNum(data['ລວມຮັບສຸດທິ ຈ່າຍຈິງ'] || data['Net Income']);
+
+                } else {
+                    console.warn("No data found for this employee/period.");
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        // ==============================
+        // Excel upload (browser-side, replaces the old Node.js script)
+        // ==============================
+        function cleanHeader(h) {
+            return String(h ?? "").replace(/\s+/g, " ").trim();
+        }
+
+        function setStatus(msg) {
+            const el = document.getElementById('upload-status');
+            if (el) el.innerText = msg;
+        }
+
+        async function loadExcel() {
+            const fileInput = document.getElementById('excelFile');
+            const periodInput = document.getElementById('periodId');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                setStatus("⚠️ ກະລຸນາເລືອກໄຟລ໌ Excel ກ່ອນ (Please choose an Excel file first).");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const periodId = (periodInput.value || currentPeriodId()).trim();
+            const collectionName = `miyamoto-salary${periodId}`;
+
+            uploadBtn.disabled = true;
+            setStatus("📖 ກຳລັງອ່ານໄຟລ໌ Excel... (Reading Excel...)");
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: "array" });
+                const sheet = workbook.Sheets["TAX"];
+
+                if (!sheet) {
+                    throw new Error('Sheet "TAX" not found in workbook');
+                }
+
+                // skiprows=5 (pandas) == range: 5 (0-based) here: skip first 5 rows,
+                // the next row becomes the header row.
+                const rawRows = XLSX.utils.sheet_to_json(sheet, {
+                    header: 1,
+                    range: 5,
+                    defval: "",
+                    raw: false,
+                });
+
+                if (rawRows.length === 0) {
+                    throw new Error("No data found after skipping rows");
+                }
+
+                const headers = rawRows[0].map(cleanHeader);
+                // rawRows[0] is the header (Excel row 6); data starts at the next row.
+                // The previous slice(2) skipped a non-existent "desc row" and silently
+                // dropped the first employee (e.g. the Director, No=1).
+                const dataRows = rawRows.slice(1);
+
+                let employees = dataRows.map((row) => {
+                    const record = {};
+                    headers.forEach((col, i) => {
+                        // Skip columns with a blank header (e.g. merged/spacer cells in Excel) -
+                        // Firestore rejects documents with an empty-string field name.
+                        if (col === "") return;
+                        const val = row[i];
+                        record[col] = val === undefined || val === null ? "" : String(val);
+                    });
+                    return record;
+                });
+
+                // Truncate parsing when hitting a row with no ID AND no Name (e.g. summary totals at bottom)
+                const stopIndex = employees.findIndex(rec => {
+                    const empId = rec['ລະຫັດພງ Emplyee ID'] || rec['Employee ID'] || '';
+                    const name = rec['ຊື່ ແລະ ນາສະກຸນ Name and Surname'] || rec['Employee Name'] || '';
+                    const hasValues = Object.values(rec).some(v => v !== "");
+                    return hasValues && String(empId).trim() === '' && String(name).trim() === '';
+                });
+
+                if (stopIndex !== -1) {
+                    employees = employees.slice(0, stopIndex);
+                }
+
+                // Remove fully empty rows and any isolated rows without an ID
+                employees = employees.filter((rec) => {
+                    const hasValues = Object.values(rec).some((v) => v !== "");
+                    const empId = rec['ລະຫັດພງ Emplyee ID'] || rec['Employee ID'] || '';
+                    const hasId = String(empId).trim() !== '';
+                    return hasValues && hasId;
+                });
+
+                // Stop when "No" column is empty
+                if (headers.includes("No")) {
+                    const firstEmptyIndex = employees.findIndex((rec) => rec["No"] === "");
+                    if (firstEmptyIndex !== -1) {
+                        employees = employees.slice(0, firstEmptyIndex);
+                    }
+                }
+
+                setStatus(`ພົບພະນັກງານ ${employees.length} ຄົນ. ກຳລັງບັນທຶກລົງໃນເຄື່ອງ... (Found ${employees.length} employees. Saving locally...)`);
+
+                let formattedEmployees = [];
+                for (let index = 0; index < employees.length; index++) {
+                    const employee = {
+                        id: `employee_${String(index + 1).padStart(4, "0")}`,
+                        payslip_sent: false
+                    };
+                    for (const [key, val] of Object.entries(employees[index])) {
+                        const cleanKey = key.trim();
+                        if (cleanKey === "") continue;
+                        employee[cleanKey] = val;
+                    }
+                    formattedEmployees.push(employee);
+                }
+
+                localStorage.setItem(`miyamoto_salary_${periodId}`, JSON.stringify(formattedEmployees));
+
+                // Offer a JSON backup download
+                const blob = new Blob([JSON.stringify(formattedEmployees, null, 4)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+
+                setStatus(`✅ ບັນທຶກສຳເລັດ! (Saved locally)\n\nPeriod: ${periodId}\nRecords: ${formattedEmployees.length}`);
+
+                const statusEl = document.getElementById('upload-status');
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `backup_salary_${periodId}.json`;
+                link.innerText = "⬇️ ດາວໂຫຼດ JSON Backup";
+                link.style.display = "block";
+                link.style.marginTop = "10px";
+                statusEl.appendChild(link);
+
+                // Refresh dashboard table after upload
+                if (window.fetchDashboardData) {
+                    await window.fetchDashboardData(periodId);
+                }
+
+            } catch (error) {
+                console.error("Error uploading Excel:", error);
+                setStatus(`❌ ຜິດພາດ (Error): ${error.message}`);
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        }
+
+        // Expose to the inline onclick handler below
+        window.loadExcel = loadExcel;
+
+        // ==============================
+        // Boot logic
+        // ==============================
+        let dashboardEmployees = [];
+        let currentAdminPeriod = "";
+
+        window.changePeriod = () => {
+            const p = document.getElementById('periodId').value;
+            if (p) {
+                window.location.href = '?period=' + p;
+            }
+        };
+
+        window.fetchDashboardData = async (periodId) => {
+            const wp = document.getElementById('dashboard-wrapper');
+            if (!wp) return;
+            wp.innerHTML = '<p style="text-align:center; padding: 20px;">ກຳລັງໂຫຼດຂໍ້ມູນ... (Loading Data...)</p>';
+
+            try {
+                const localData = localStorage.getItem(`miyamoto_salary_${periodId}`);
+                if (!localData) {
+                    wp.innerHTML = '<p style="text-align:center; color:#888; padding: 20px;">ບໍ່ມີຂໍ້ມູນສຳລັບເດືອນນີ້. ກະລຸນາອັບໂຫຼດໄຟລ໌ Excel ອີກຄັ້ງ. (No data for this period.)</p>';
+                    return;
+                }
+
+                dashboardEmployees = JSON.parse(localData);
+
+                window.renderDashboardTable(dashboardEmployees);
+
+            } catch (err) {
+                wp.innerHTML = `<p style="text-align:center; color:red; padding:20px;">Error loading dashboard: ${err.message}</p>`;
+            }
+        };
+
+        window.renderDashboardTable = (data) => {
+            const wp = document.getElementById('dashboard-wrapper');
+            if (!wp) return;
+
+            let html = `
+                <div class="dashboard-container">
+                    <div class="dashboard-header">
+                        <h3 style="margin:0; color:#1a5276;">ລາຍຊື່ພະນັກງານ (Employees) - ${data.length} ຄົນ</h3>
+                        <input type="text" class="search-input" id="search-input" placeholder="ຄົ້ນຫາຊື່ ຫຼື ລະຫັດ (Search...)" oninput="filterDashboard()">
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>ລ/ດ (No.)</th>
+                                    <th>ລະຫັດ (ID)</th>
+                                    <th>ຊື່ (Name)</th>
+                                    <th>ເບີໂທ (Phone)</th>
+                                    <th>ຮັບສຸດທິ (Net Pay)</th>
+                                    <th>ສະຖານະ (Status)</th>
+                                    <th style="min-width: 200px;">ຈັດການ (Action)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            wp.innerHTML = html;
+
+            window.populateDashboardRows(data);
+        };
+
+        function getPhoneProp(emp) {
+            return emp['Phone Number'] || emp['Phone'] || emp['Telephone'] || emp['Tel'] || emp['ເບີໂທ'] || emp['ເບີໂທລະສັບ'] || '';
+        }
+
+        window.filterDashboard = () => {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const filtered = dashboardEmployees.filter(emp =>
+                (emp['ຊື່ ແລະ ນາສະກຸນ Name and Surname'] || emp['Employee Name'] || '').toLowerCase().includes(q) ||
+                (emp['ລະຫັດພງ Emplyee ID'] || emp['Employee ID'] || '').toLowerCase().includes(q)
+            );
+            window.populateDashboardRows(filtered);
+        };
+
+        window.populateDashboardRows = (data) => {
+            const tbody = document.getElementById('dashboard-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = data.map((emp, index) => {
+                const no = index + 1;
+                const phone = getPhoneProp(emp);
+                const name = emp['ຊື່ ແລະ ນາສະກຸນ Name and Surname'] || emp['Employee Name'] || '';
+                const empId = emp['ລະຫັດພງ Emplyee ID'] || emp['Employee ID'] || '';
+
+                let rawNet = emp['ລວມຮັບສຸດທິ ຈ່າຍຈິງ'] || emp['ລວມຮັບສຸດທິ'] || emp['Net Income'] || '0';
+                // Normalise the same way as formatNum: strip commas/whitespace, treat dashes as 0.
+                const cleanedNet = String(rawNet).trim();
+                const isDash = cleanedNet.replace(/-/g, '').trim() === '';
+                rawNet = isDash ? '0' : cleanedNet.replace(/,/g, '');
+                const netPay = Number(rawNet).toLocaleString('en-US');
+                const isSent = emp.payslip_sent ? true : false;
+
+                return `
+                    <tr>
+                        <td>${no}</td>
+                        <td>${empId}</td>
+                        <td>${name}</td>
+                        <td>${phone}</td>
+                        <td style="text-align:right; font-weight:bold;">${netPay}</td>
+                        <td id="status-${emp.id}">
+                            ${isSent ? '<span class="sent-icon">✔️ ສົ່ງແລ້ວ</span>' : '<span style="color:#aaa;">ຍັງບໍ່ສົ່ງ</span>'}
+                        </td>
+                        <td>
+                            <button class="send-btn" onclick="sendPayslip('${emp.id}', '${empId}', '${phone}')">
+                                💬 WhatsApp
+                            </button>
+                            <button onclick="openPayslipModal('${empId}')" style="margin-left:10px; background:var(--miyamoto-blue); color:white; border:none; padding: 6px 12px; cursor:pointer; border-radius:4px; font-weight:bold;">ເບິ່ງ (View)</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        window.openPayslipModal = (empId) => {
+            const modal = document.getElementById('payslip-modal');
+            const wrapper = document.getElementById('modal-payslip-wrapper');
+            wrapper.innerHTML = `<div class="payslip-container" style="margin: 0; box-shadow: none;">${PAYSLIP_TEMPLATE}</div>`;
+            // Use the .open class so display:flex centers the popup, and clear any
+            // previous inline display value.
+            modal.style.display = "";
+            modal.classList.add("open");
+            loadPayslip(empId, currentAdminPeriod);
+            // Fit the payslip to the viewport after the DOM has laid it out.
+            requestAnimationFrame(() => fitPayslipToViewport());
+        };
+
+        // Scale the modal payslip down so the whole thing fits in the viewport
+        // without scrolling. Recomputes on resize while the modal is open.
+        function fitPayslipToViewport() {
+            const slip = document.querySelector('#modal-payslip-wrapper .payslip-container');
+            if (!slip) return;
+            // Reset any previous transform so scrollHeight reflects natural size.
+            slip.style.transform = "";
+            // Reserve room for backdrop padding (~10px top + 10px bottom).
+            const availH = window.innerHeight - 40;
+            const naturalH = slip.scrollHeight;
+            const scale = Math.min(1, availH / naturalH);
+            slip.style.transform = scale < 1 ? `scale(${scale})` : "";
+            // When scaled down, the layout still reserves the original (un-scaled)
+            // height, leaving empty space below. Compensate by collapsing the
+            // wrapper height to the scaled size.
+            const wrapper = document.getElementById('modal-payslip-wrapper');
+            wrapper.style.height = slip.style.transform ? `${naturalH * scale}px` : "";
+        }
+
+        window.addEventListener("resize", () => {
+            if (document.getElementById('payslip-modal').classList.contains("open")) {
+                fitPayslipToViewport();
+            }
+        });
+
+        window.closeModal = () => {
+            const modal = document.getElementById('payslip-modal');
+            modal.classList.remove("open");
+            modal.style.display = "none";
+            document.getElementById('modal-payslip-wrapper').innerHTML = "";
+        };
+
+        window.onclick = function (event) {
+            const modal = document.getElementById('payslip-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+
+        window.sendPayslip = async (docId, employeeId, rawPhone) => {
+            if (!rawPhone || rawPhone.trim() === '') {
+                alert('ບໍ່ມີເບີໂທສຳລັບພະນັກງານນີ້ (No phone number found for this employee)');
+                return;
+            }
+            const emp = dashboardEmployees.find(e => e.id === docId);
+            if (!emp) {
+                alert('ບໍ່ພົບຂໍ້ມູນພະນັກງານນີ້ (Employee data not found)');
+                return;
+            }
+
+            let phoneNum = rawPhone.replace(/\D/g, '');
+            if (phoneNum.startsWith('20') && phoneNum.length === 10) {
+                phoneNum = '856' + phoneNum;
+            } else if (phoneNum.length === 8 && phoneNum.startsWith('20')) {
+                phoneNum = '856' + phoneNum;
+            } else if (phoneNum.startsWith('020')) {
+                phoneNum = '85620' + phoneNum.substring(3);
+            }
+
+            const laoMonths = {
+                "01": "ມັງກອນ", "02": "ກຸມພາ", "03": "ມີນາ", "04": "ເມສາ",
+                "05": "ພຶດສະພາ", "06": "ມິຖຸນາ", "07": "ກໍລະກົດ", "08": "ສິງຫາ",
+                "09": "ກັນຍາ", "10": "ຕຸລາ", "11": "ພະຈິກ", "12": "ທັນວາ"
+            };
+            const year = currentAdminPeriod.substring(0, 4);
+            const monthKey = currentAdminPeriod.substring(4, 6);
+            const displayMonth = laoMonths[monthKey] ? `${laoMonths[monthKey]} ${year}` : currentAdminPeriod;
+
+            const formatNum = (val) => {
+                if (val === undefined || val === null) return 0;
+                const cleaned = String(val).trim();
+                if (cleaned === '' || cleaned === '-' || cleaned.replace(/-/g, '').trim() === '') return 0;
+                return Number(cleaned.replace(/,/g, '')) || 0;
+            };
+
+            const empName = emp['ຊື່ ແລະ ນາສະກຸນ Name and Surname'] || emp['Employee Name'] || '';
+            const empPosition = emp['ຕຳແໜ່ງ Position'] || emp['Position'] || '';
+
+            let msg = `ສະບາຍດີ ທ່ານ ${empName},\n\n📄 ໃບແຈ້ງເງິນເດືອນ ປະຈຳເດືອນ ${displayMonth}\nເລກທີ: ${employeeId}\nຕຳແໜ່ງ: ${empPosition}\n\n`;
+
+            msg += `💰 ລາຍຮັບ\n`;
+
+            const checksE = [
+                { lbl: "ເງິນເດືອນພື້ນຖານ", v: formatNum(emp['ເງິນເດືອນພື້ນຖານ Basic Salary'] || emp['Basic Salary']) },
+                { lbl: "ເງິນລ່ວງເວລາ", v: formatNum(emp['ເງິນລ່ວງເວລາ Overtime'] || emp['Overtime Pay']) },
+                { lbl: "ເງິນກາງຄືນ", v: formatNum(emp['ເງິນກະກາງຄືນ'] || emp['Night Shift Allowance']) },
+                { lbl: "ເງິນຄວາມປອດໄພ", v: formatNum(emp['ເງິນຄວາມປອດໄພ'] || emp['Safety Allowance']) },
+                { lbl: "ເງິນຄວາມຮ່ວມມື", v: formatNum(emp['ເງິນຄວາມ ຮວມມື'] || emp['Cooperation Allowance']) },
+                { lbl: "ເງິນຄວາມສະຫຍັນ", v: formatNum(emp['ເງິນຄວາມຂະຫຍັນ'] || emp['Diligence Allowance']) },
+                { lbl: "ເງິນຄວາມສະອາດ5ສ", v: formatNum(emp['ເງິນຄວາມສະອາດ5ສ'] || emp['5S Allowance']) },
+                { lbl: "ເງິນຄ່າທີ່ພັກ", v: formatNum(emp['ເງິນຄ່າທີ່ພັກ'] || emp['Housing Allowance']) },
+                { lbl: "ເງິນເປົ້າໝາຍການຜະລິດ", v: formatNum(emp['ເງິນເປົ້າການຜະລິດ'] || emp['Production Target Allowance']) },
+                { lbl: "ເງິນຕຳແໜ່ງ", v: formatNum(emp['ເງີນຕຳແໜ່ງ'] || emp['Position Allowance']) },
+                { lbl: "ເງິນນ້ຳມັນ", v: formatNum(emp['ເງິນນ້ຳມັນ'] || emp['Fuel Allowance']) }
+            ];
+            for (let c of checksE) {
+                if (c.v > 0) {
+                    msg += `• ${c.lbl}: ${c.v.toLocaleString('en-US')} ກີບ\n`;
+                }
+            }
+
+            const totalEarn = formatNum(emp['ລວມຮັບ'] || emp['Total Earnings']);
+            msg += `\n📊 ລາຍຮັບລວມ: ${totalEarn.toLocaleString('en-US')} ກີບ\n\n`;
+
+            msg += `📉 ລາຍຫັກ\n`;
+            const checksD = [
+                { lbl: "ປະກັນສັງຄົມ", v: formatNum(emp['ປະກັນສັ່ງຄົມ'] || emp['Social Security']) },
+                { lbl: "ມາຊ້າ 1-10 ນາທີ", v: formatNum(emp['ມາຊ້າ 1-10 ນາທີ'] || emp['Late Penalty (1-10 mins)']) },
+                { lbl: "ມາຊ້າ 10-30 ນາທີ", v: formatNum(emp['ມາຊ້າ 10-30 ນາທີ'] || emp['Late Penalty (10-30 mins)']) },
+                { lbl: "ມາຊ້າ 30 ນາທີຂຶ້ນໄປ", v: formatNum(emp['ມາຊ້າ 30 ນາທີຂື້ນໄປ'] || emp['Late Penalty (30+ mins)']) },
+                { lbl: "ເງິນຂາດວຽກ", v: formatNum(emp['ເງິນຂາດວຽກ'] || emp['Absence Deduction']) },
+                { lbl: "ບໍ່ເຕັມເດືອນ", v: formatNum(emp['ບໍ່ເຕັມເດືອນ'] || emp['incomplete Month Deduction']) },
+                { lbl: "ພາສີລາຍໄດ້ສ່ວນບຸກຄົນ 5%", v: formatNum(emp['ພາສີ 5%'] || emp['Income Tax (5%)']) }
+            ];
+            let hasDed = false;
+            for (let c of checksD) {
+                if (c.v > 0) {
+                    msg += `• ${c.lbl}: ${c.v.toLocaleString('en-US')} ກີບ\n`;
+                    hasDed = true;
+                }
+            }
+            if (!hasDed) msg += `• ບໍ່ມີລາຍຫັກ (None)\n`;
+
+            const totalDed = formatNum(emp['ລວມຫັກ'] || emp['Total Deductions']);
+            msg += `\n📌 ລາຍຫັກລວມ: ${totalDed.toLocaleString('en-US')} ກີບ\n\n`;
+
+            const netPay = formatNum(emp['ລວມຮັບສຸດທິ ຈ່າຍຈິງ'] || emp['ລວມຮັບສຸດທິ'] || emp['Net Income']);
+            msg += `✅ ເງິນຮັບສຸດທິ: ${netPay.toLocaleString('en-US')} ກີບ\n\n`;
+
+            const baseUrl = window.location.origin + window.location.pathname;
+            const payslipUrl = `${baseUrl}?id=${employeeId}&period=${currentAdminPeriod}`;
+            // msg += `🔗 ລິ້ງສຳລັບເບິ່ງໃບແຈ້ງເງິນເດືອນ:\n${payslipUrl}\n\n`;
+
+            msg += `ຂໍຂອບໃຈ\nHR Department\nMiyamoto Lao`;
+
+            const waLink = `https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`;
+
+            window.open(waLink, '_blank');
+
+            try {
+                emp.payslip_sent = true;
+                localStorage.setItem(`miyamoto_salary_${currentAdminPeriod}`, JSON.stringify(dashboardEmployees));
+
+                const statusTd = document.getElementById('status-' + docId);
+                if (statusTd) statusTd.innerHTML = '<span class="sent-icon">✔️ ສົ່ງແລ້ວ</span>';
+
+            } catch (err) {
+                console.error("Error updating sent status", err);
+            }
+        };
+
+        function renderAdminView(periodId) {
+            currentAdminPeriod = periodId;
+            document.getElementById('payslip-container').innerHTML = `
+                <div class="upload-box" style="padding-bottom: 20px; border-bottom: 1px solid #eee;">
+                    <h2 style="color:var(--miyamoto-blue);">ຜູ້ຄວບຄຸມລະບົບ (Admin Dashboard)</h2>
+                    <p>ອັບໂຫຼດໄຟລ໌ Excel ຂໍ້ມູນເງິນເດືອນ (Sheet name ຕ້ອງເປັນ "TAX")</p>
+                    <div class="field-row" style="flex-direction:row; justify-content:center; flex-wrap:wrap; align-items:center;">
+                        <label for="periodId">ເດືອນ/ປີ (YYYYMM)</label>
+                        <input type="text" id="periodId" value="${periodId}" placeholder="202606" style="width:80px;">
+                        <button onclick="changePeriod()" style="padding: 8px 12px; margin-top:0; font-size:12px;">ປ່ຽນເດືອນ</button>
+                    </div>
+                    <div class="field-row" style="flex-direction:row; justify-content:center; flex-wrap:wrap; align-items:center; margin-top: 10px;">
+                        <input type="file" id="excelFile" accept=".xlsx,.xls">
+                        <button id="uploadBtn" onclick="loadExcel()" style="margin-top:0;">ອັບໂຫຼດ (Upload)</button>
+                    </div>
+                    <div id="upload-status" class="upload-status" style="text-align:center;"></div>
+                </div>
+                <div id="dashboard-wrapper"></div>
+            `;
+        }
+
+        let PAYSLIP_TEMPLATE = "";
+
+        window.onload = async () => {
+            PAYSLIP_TEMPLATE = document.getElementById('payslip-container').innerHTML;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const employeeId = urlParams.get('id');
+            const periodId = urlParams.get('period') || currentPeriodId();
+
+            if (employeeId) {
+                console.log(`Fetching data for ID: ${employeeId}, Period: ${periodId}`);
+                loadPayslip(employeeId, periodId);
+            } else {
+                renderAdminView(periodId);
+                await fetchDashboardData(periodId);
+            }
+        };
+    </script>
+
+</body>
+
+</html>
