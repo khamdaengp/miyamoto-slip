@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
-    "@capacitor/cli": "^8.5.1",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.4.3",
     "@capacitor/core": "^8.5.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
@@ -27,7 +28,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
-    "@electron/packager": "^19.0.3",
+    "@electron/packager": "^20.3.0",
     "@tailwindcss/vite": "^4.0.9",
     "@types/node": "^22.13.5",
     "@types/react": "^19.0.10",

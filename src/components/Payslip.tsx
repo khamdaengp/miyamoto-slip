@@ -54,11 +54,11 @@ export const Payslip: React.FC<PayslipProps> = ({ employee, periodId, isCompact 
             className={`${isCompact ? 'max-h-[50px]' : 'max-h-[75px]'} max-w-full object-contain`}
           />
         </div>
-        <div className="flex-1 bg-[#0097E0] text-white flex flex-col justify-center items-center text-center p-2 md:p-3">
+        <div className="flex-1 bg-[#0077b6] text-white flex flex-col justify-center items-center text-center p-2 md:p-3">
           <h1 className={`${isCompact ? 'text-base font-bold' : 'text-xl md:text-2xl font-bold'} m-0 leading-tight`}>
             ໃບແຈ້ງເງິນເດືອນ
           </h1>
-          <h2 className={`${isCompact ? 'text-xs' : 'text-sm md:text-base'} m-0 mt-1 font-normal opacity-95`}>
+          <h2 className={`${isCompact ? 'text-xs' : 'text-sm md:text-base'} m-0 mt-1 font-medium text-white`}>
             ປະຈຳເດືອນ {displayMonth}
           </h2>
         </div>
@@ -77,9 +77,9 @@ export const Payslip: React.FC<PayslipProps> = ({ employee, periodId, isCompact 
       </div>
 
       {/* Earnings Section */}
-      <div className={`text-center font-bold text-[#1a5276] ${isCompact ? 'my-2 text-sm' : 'my-4 text-base'}`}>
+      <h3 className={`text-center font-bold text-[#1a5276] ${isCompact ? 'my-2 text-sm' : 'my-4 text-base'}`}>
         ລາຍຮັບ
-      </div>
+      </h3>
 
       <div className="space-y-1">
         {earningsList.map((item) => (
@@ -90,7 +90,7 @@ export const Payslip: React.FC<PayslipProps> = ({ employee, periodId, isCompact 
             }`}
           >
             <div className="flex gap-2 flex-1">
-              <span className="w-5 text-right shrink-0 text-gray-500 font-medium">{item.num}</span>
+              <span className="w-5 text-right shrink-0 text-gray-600 font-medium">{item.num}</span>
               <span className="truncate">{item.lbl}</span>
             </div>
             <div className={`text-right shrink-0 font-medium ${isCompact ? 'w-24' : 'w-28'}`}>
@@ -115,9 +115,9 @@ export const Payslip: React.FC<PayslipProps> = ({ employee, periodId, isCompact 
       <div className="my-2"></div>
 
       {/* Deductions Section */}
-      <div className={`text-center font-bold text-[#1a5276] ${isCompact ? 'my-2 text-sm' : 'my-4 text-base'}`}>
+      <h3 className={`text-center font-bold text-[#1a5276] ${isCompact ? 'my-2 text-sm' : 'my-4 text-base'}`}>
         ລາຍຈ່າຍ / ຫັກ
-      </div>
+      </h3>
 
       <div className="space-y-1">
         {deductionsList.map((item) => (
@@ -128,7 +128,7 @@ export const Payslip: React.FC<PayslipProps> = ({ employee, periodId, isCompact 
             }`}
           >
             <div className="flex gap-2 flex-1">
-              <span className="w-5 text-right shrink-0 text-gray-500 font-medium">{item.num}</span>
+              <span className="w-5 text-right shrink-0 text-gray-600 font-medium">{item.num}</span>
               <span className="truncate">{item.lbl}</span>
             </div>
             <div className={`text-right shrink-0 font-medium ${isCompact ? 'w-24' : 'w-28'}`}>

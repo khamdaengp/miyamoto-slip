@@ -1,5 +1,6 @@
 import { EmployeeRecord } from '../types/payroll';
 import { normalizeLaoPhone, getPeriodInfo } from './formatters';
+import { Capacitor } from '@capacitor/core';
 
 export function buildWhatsAppMessage(employee: EmployeeRecord, periodId: string): string {
   const periodInfo = getPeriodInfo(periodId);
@@ -57,8 +58,28 @@ export function openWhatsAppPayslip(employee: EmployeeRecord, periodId: string):
 
   const phoneNum = normalizeLaoPhone(employee.phone);
   const msg = buildWhatsAppMessage(employee, periodId);
-  const waLink = `https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`;
+  const encodedMsg = encodeURIComponent(msg);
+  const waWebUrl = `https://wa.me/${phoneNum}?text=${encodedMsg}`;
 
-  window.open(waLink, '_blank');
+  // Native mobile app handling (Capacitor Android / iOS)
+  if (Capacitor.isNativePlatform()) {
+    const waNativeUrl = `whatsapp://send?phone=${phoneNum}&text=${encodedMsg}`;
+    
+    // Trigger native app intent via link
+    const link = document.createElement('a');
+    link.href = waNativeUrl;
+    link.target = '_system';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Fallback if WhatsApp is not installed
+    setTimeout(() => {
+      window.open(waWebUrl, '_system');
+    }, 600);
+    return true;
+  }
+
+  window.open(waWebUrl, '_blank');
   return true;
 }
