@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { EmployeeRecord } from '../types/payroll';
 import { parseExcelFile } from '../utils/excelParser';
+import { parsePdfFile } from '../utils/pdfParser';
 import { openWhatsAppPayslip } from '../utils/whatsapp';
 import { clearEmployeesFromStorage, exportJsonBackup, saveEmployeesToStorage } from '../utils/storage';
 import { formatNum } from '../utils/formatters';
@@ -84,21 +85,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // Handle Excel upload
+  // Handle Excel or PDF upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    setUploadStatus({ type: 'loading', message: `ກຳລັງອ່ານໄຟລ໌ ${file.name}... (Reading Excel...)` });
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+
+    setUploadStatus({
+      type: 'loading',
+      message: isPdf
+        ? `ກຳລັງອ່ານໄຟລ໌ PDF ${file.name}... (Parsing PDF...)`
+        : `ກຳລັງອ່ານໄຟລ໌ ${file.name}... (Reading Excel...)`,
+    });
 
     try {
-      const parsed = await parseExcelFile(file);
+      let parsed: EmployeeRecord[];
+      let effectivePeriod = periodId;
+
+      if (isPdf) {
+        const result = await parsePdfFile(file);
+        parsed = result.employees;
+        if (result.detectedPeriod && result.detectedPeriod !== periodId) {
+          effectivePeriod = result.detectedPeriod;
+          onPeriodChange(result.detectedPeriod);
+        }
+      } else {
+        parsed = await parseExcelFile(file);
+      }
+
       onEmployeesUpdated(parsed);
-      saveEmployeesToStorage(periodId, parsed);
+      saveEmployeesToStorage(effectivePeriod, parsed);
       setUploadStatus({
         type: 'success',
-        message: `✅ ບັນທຶກສຳເລັດ! ພົບພະນັກງານ ${parsed.length} ຄົນສຳລັບເດືອນ ${periodId}`,
+        message: `✅ ບັນທຶກສຳເລັດ! ພົບພະນັກງານ ${parsed.length} ຄົນສຳລັບເດືອນ ${effectivePeriod} (ຈາກ ${file.name})`,
       });
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: unknown) {
@@ -215,9 +236,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <div className="text-xs sm:text-sm font-semibold text-slate-200">ເລືອກໄຟລ໌ Excel (.xlsx, .xls)</div>
+              <div className="text-xs sm:text-sm font-semibold text-slate-200">ເລືອກໄຟລ໌ Excel ຫຼື PDF (.xlsx, .xls, .pdf)</div>
               <div id="upload-help-text" className="text-[11px] sm:text-xs text-slate-400">
-                ລະບົບຈະອ່ານແຜ່ນງານ "TAX" ແລະ ບັນທຶກລົງໃນອຸປະກອນນີ້
+                ຮອງຮັບທັງໄຟລ໌ Excel (Sheet "TAX") ແລະ ໄຟລ໌ເອກະສານ PDF ໃບເງິນເດືອນ
               </div>
             </div>
           </div>
@@ -226,7 +247,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".xlsx, .xls"
+              accept=".xlsx, .xls, .pdf, application/pdf"
               onChange={handleFileUpload}
               className="sr-only"
               id="excel-upload-btn"
@@ -237,7 +258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#0077b6] hover:bg-[#005f92] text-white text-xs font-bold px-4 py-2.5 rounded-lg cursor-pointer transition shadow-md shadow-black/20 min-h-[42px] focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-slate-950 focus-within:ring-white"
             >
               <Upload className="w-4 h-4" aria-hidden="true" />
-              <span>ອັບໂຫຼດ Excel</span>
+              <span>ອັບໂຫຼດ Excel / PDF</span>
             </label>
           </div>
         </div>
