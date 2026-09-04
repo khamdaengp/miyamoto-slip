@@ -1,0 +1,41 @@
+{
+  "name": "miyamoto-slip",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Miyamoto AC - Salary Viewer Desktop Application",
+  "author": "Miyamoto Lao",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "desktop": "electron .",
+    "desktop:build": "npm run build && electron-packager . \"Miyamoto Salary Viewer\" --platform=win32 --arch=x64 --out=release --overwrite --ignore=\"^/(release|dist_electron|\\.git)\"",
+    "apk:build": "npm run build && npx cap sync android && cd android && gradlew.bat assembleDebug && copy app\\build\\outputs\\apk\\debug\\app-debug.apk ..\\Miyamoto-Salary-Viewer.apk",
+    "apk:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@electron/packager": "^19.0.3",
+    "@tailwindcss/vite": "^4.0.9",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^44.1.1",
+    "tailwindcss": "^4.0.9",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}

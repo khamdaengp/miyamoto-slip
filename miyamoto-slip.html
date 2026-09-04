@@ -726,9 +726,12 @@
     <script>
 
         function currentPeriodId() {
+            // Default to LAST month's payroll period, not the current calendar month
+            // (payslips for a given month are normally processed/uploaded afterwards).
             const now = new Date();
-            const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, "0");
+            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const yyyy = lastMonth.getFullYear();
+            const mm = String(lastMonth.getMonth() + 1).padStart(2, "0");
             return `${yyyy}${mm}`;
         }
 
@@ -743,7 +746,9 @@
                     return;
                 }
                 const employees = JSON.parse(localData);
-                const data = employees.find(e => String(e['Employee ID']) === String(employeeId));
+                const data = employees.find(e =>
+                    String(e['ລະຫັດພງ Emplyee ID'] || e['Employee ID'] || '') === String(employeeId)
+                );
 
                 if (data) {
                     const formatNum = (val) => {
@@ -785,6 +790,14 @@
                     document.getElementById('earn-gas').innerText = formatNum(data['ເງິນນ້ຳມັນ'] || data['Fuel Allowance']);
                     document.getElementById('total-earnings').innerText = formatNum(data['ລວມຮັບ'] || data['Total Earnings']);
 
+                    const toNum = (val) => {
+                        if (val === undefined || val === null) return 0;
+                        const cleaned = String(val).trim();
+                        if (cleaned === '' || cleaned === '-' || cleaned.replace(/-/g, '').trim() === '') return 0;
+                        const num = Number(cleaned.replace(/,/g, ''));
+                        return isNaN(num) ? 0 : num;
+                    };
+
                     const sso = (data['ປະກັນສັ່ງຄົມ'] || data['Social Security'] || 0);
                     const late1 = (data['ມາຊ້າ 1-10 ນາທີ'] || data['Late Penalty (1-10 mins)'] || 0);
                     const late2 = (data['ມາຊ້າ 10-30 ນາທີ'] || data['Late Penalty (10-30 mins)'] || 0);
@@ -792,8 +805,11 @@
                     const absent = (data['ເງິນຂາດວຽກ'] || data['Absence Deduction'] || 0);
                     const incomplete = (data['ບໍ່ເຕັມເດືອນ'] || data['incomplete Month Deduction'] || 0);
                     const tax = (data['ພາສີ 5%'] || data['Income Tax (5%)'] || 0);
-                    // const sumDeductions = sso + late1 + late2 + late3 + absent + incomplete + tax;
-                    const sumDeductions = data['ລວມຫັກ'] || data['Total Deductions'] || 0;
+                    // "ລວມຫັກ" in the sheet only totals attendance-related deductions
+                    // (SSO/late/absence) and excludes income tax, so it can't be used
+                    // as the grand total shown to the employee. Sum the actual line
+                    // items instead so this matches what's displayed above.
+                    const sumDeductions = toNum(sso) + toNum(late1) + toNum(late2) + toNum(late3) + toNum(absent) + toNum(incomplete) + toNum(tax);
 
                     document.getElementById('deduct-sso').innerText = formatNum(sso);
                     document.getElementById('deduct-late1').innerText = formatNum(late1);
@@ -903,6 +919,16 @@
                     return hasValues && hasId;
                 });
 
+                // Real employee IDs always follow the "MY..." pattern (e.g. MYL000001,
+                // MYT202602136). Some payroll sheets have a stray row right under the
+                // header (Excel footnote/reference markers like "1", "2", "3" landing in
+                // the ID/Name/Position columns) which would otherwise be parsed as a fake
+                // employee with aggregated totals. Filter those out.
+                employees = employees.filter((rec) => {
+                    const empId = String(rec['ລະຫັດພງ Emplyee ID'] || rec['Employee ID'] || '').trim();
+                    return /^MY/i.test(empId);
+                });
+
                 // Stop when "No" column is empty
                 if (headers.includes("No")) {
                     const firstEmptyIndex = employees.findIndex((rec) => rec["No"] === "");
@@ -970,6 +996,32 @@
             const p = document.getElementById('periodId').value;
             if (p) {
                 window.location.href = '?period=' + p;
+            }
+        };
+
+        window.clearLocalStorage = () => {
+            const periodId = (document.getElementById('periodId')?.value || currentAdminPeriod).trim();
+            const key = `miyamoto_salary_${periodId}`;
+
+            if (!localStorage.getItem(key)) {
+                alert(`ບໍ່ມີຂໍ້ມູນທ້ອງຖິ່ນສຳລັບເດືອນ ${periodId} (No local data found for period ${periodId}).`);
+                return;
+            }
+
+            const confirmed = confirm(
+                `ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນທ້ອງຖິ່ນສຳລັບເດືອນ ${periodId}?\n` +
+                `ນີ້ຈະລຶບຂໍ້ມູນເງິນເດືອນທີ່ອັບໂຫຼດໄວ້ (ຮວມທັງສະຖານະ "ສົ່ງແລ້ວ") ອອກຈາກເຄື່ອງນີ້.\n` +
+                `(This will delete the uploaded payroll data for this period from this device. It cannot be undone.)`
+            );
+            if (!confirmed) return;
+
+            localStorage.removeItem(key);
+            dashboardEmployees = [];
+            setStatus(`🗑️ ລຶບຂໍ້ມູນທ້ອງຖິ່ນສຳລັບເດືອນ ${periodId} ແລ້ວ (Cleared local data for ${periodId}).`);
+
+            const wp = document.getElementById('dashboard-wrapper');
+            if (wp) {
+                wp.innerHTML = '<p style="text-align:center; color:#888; padding: 20px;">ບໍ່ມີຂໍ້ມູນສຳລັບເດືອນນີ້. ກະລຸນາອັບໂຫຼດໄຟລ໌ Excel ອີກຄັ້ງ. (No data for this period.)</p>';
             }
         };
 
@@ -1173,11 +1225,11 @@
 
             let msg = `ສະບາຍດີ ທ່ານ ${empName},\n\n📄 ໃບແຈ້ງເງິນເດືອນ ປະຈຳເດືອນ ${displayMonth}\nເລກທີ: ${employeeId}\nຕຳແໜ່ງ: ${empPosition}\n\n`;
 
-            msg += `💰 ລາຍຮັບ\n`;
+            msg += `ລາຍຮັບ\n`;
 
             const checksE = [
-                { lbl: "ເງິນເດືອນພື້ນຖານ", v: formatNum(emp['ເງິນເດືອນພື້ນຖານ Basic Salary'] || emp['Basic Salary']) },
-                { lbl: "ເງິນລ່ວງເວລາ", v: formatNum(emp['ເງິນລ່ວງເວລາ Overtime'] || emp['Overtime Pay']) },
+                { lbl: "ເງິນເດືອນພື້ນຖານ Basic Salary", v: formatNum(emp['ເງິນເດືອນພື້ນຖານ Basic Salary'] || emp['Basic Salary']) },
+                { lbl: "ເງິນລ່ວງເວລາ Overtime", v: formatNum(emp['ເງິນລ່ວງເວລາ Overtime'] || emp['Overtime Pay']) },
                 { lbl: "ເງິນກາງຄືນ", v: formatNum(emp['ເງິນກະກາງຄືນ'] || emp['Night Shift Allowance']) },
                 { lbl: "ເງິນຄວາມປອດໄພ", v: formatNum(emp['ເງິນຄວາມປອດໄພ'] || emp['Safety Allowance']) },
                 { lbl: "ເງິນຄວາມຮ່ວມມື", v: formatNum(emp['ເງິນຄວາມ ຮວມມື'] || emp['Cooperation Allowance']) },
@@ -1188,16 +1240,14 @@
                 { lbl: "ເງິນຕຳແໜ່ງ", v: formatNum(emp['ເງີນຕຳແໜ່ງ'] || emp['Position Allowance']) },
                 { lbl: "ເງິນນ້ຳມັນ", v: formatNum(emp['ເງິນນ້ຳມັນ'] || emp['Fuel Allowance']) }
             ];
-            for (let c of checksE) {
-                if (c.v > 0) {
-                    msg += `• ${c.lbl}: ${c.v.toLocaleString('en-US')} ກີບ\n`;
-                }
-            }
+            checksE.forEach((c, i) => {
+                msg += `${i + 1}. ${c.lbl}: ${c.v.toLocaleString('en-US')} ກີບ\n`;
+            });
 
             const totalEarn = formatNum(emp['ລວມຮັບ'] || emp['Total Earnings']);
-            msg += `\n📊 ລາຍຮັບລວມ: ${totalEarn.toLocaleString('en-US')} ກີບ\n\n`;
+            msg += `ລວມຮັບ: ${totalEarn.toLocaleString('en-US')} ກີບ\n\n`;
 
-            msg += `📉 ລາຍຫັກ\n`;
+            msg += `ລາຍຈ່າຍ / ຫັກ\n`;
             const checksD = [
                 { lbl: "ປະກັນສັງຄົມ", v: formatNum(emp['ປະກັນສັ່ງຄົມ'] || emp['Social Security']) },
                 { lbl: "ມາຊ້າ 1-10 ນາທີ", v: formatNum(emp['ມາຊ້າ 1-10 ນາທີ'] || emp['Late Penalty (1-10 mins)']) },
@@ -1207,20 +1257,15 @@
                 { lbl: "ບໍ່ເຕັມເດືອນ", v: formatNum(emp['ບໍ່ເຕັມເດືອນ'] || emp['incomplete Month Deduction']) },
                 { lbl: "ພາສີລາຍໄດ້ສ່ວນບຸກຄົນ 5%", v: formatNum(emp['ພາສີ 5%'] || emp['Income Tax (5%)']) }
             ];
-            let hasDed = false;
-            for (let c of checksD) {
-                if (c.v > 0) {
-                    msg += `• ${c.lbl}: ${c.v.toLocaleString('en-US')} ກີບ\n`;
-                    hasDed = true;
-                }
-            }
-            if (!hasDed) msg += `• ບໍ່ມີລາຍຫັກ (None)\n`;
+            checksD.forEach((c, i) => {
+                msg += `${i + 1}. ${c.lbl}: ${c.v.toLocaleString('en-US')} ກີບ\n`;
+            });
 
-            const totalDed = formatNum(emp['ລວມຫັກ'] || emp['Total Deductions']);
-            msg += `\n📌 ລາຍຫັກລວມ: ${totalDed.toLocaleString('en-US')} ກີບ\n\n`;
+            const totalDed = checksD.reduce((sum, c) => sum + c.v, 0);
+            msg += `ລວມຫັກ: ${totalDed.toLocaleString('en-US')} ກີບ\n\n`;
 
             const netPay = formatNum(emp['ລວມຮັບສຸດທິ ຈ່າຍຈິງ'] || emp['ລວມຮັບສຸດທິ'] || emp['Net Income']);
-            msg += `✅ ເງິນຮັບສຸດທິ: ${netPay.toLocaleString('en-US')} ກີບ\n\n`;
+            msg += `ລວມຮັບສຸດທິ: ${netPay.toLocaleString('en-US')} ກີບ\n\n`;
 
             const baseUrl = window.location.origin + window.location.pathname;
             const payslipUrl = `${baseUrl}?id=${employeeId}&period=${currentAdminPeriod}`;
@@ -1254,6 +1299,7 @@
                         <label for="periodId">ເດືອນ/ປີ (YYYYMM)</label>
                         <input type="text" id="periodId" value="${periodId}" placeholder="202606" style="width:80px;">
                         <button onclick="changePeriod()" style="padding: 8px 12px; margin-top:0; font-size:12px;">ປ່ຽນເດືອນ</button>
+                        <button onclick="clearLocalStorage()" style="padding: 8px 12px; margin-top:0; font-size:12px; background:#c0392b;">🗑️ ລຶບຂໍ້ມູນທ້ອງຖິ່ນ (Clear Local Storage)</button>
                     </div>
                     <div class="field-row" style="flex-direction:row; justify-content:center; flex-wrap:wrap; align-items:center; margin-top: 10px;">
                         <input type="file" id="excelFile" accept=".xlsx,.xls">
