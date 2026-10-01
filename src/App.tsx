@@ -6,7 +6,7 @@ import { Navbar } from './components/Navbar';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Payslip } from './components/Payslip';
 import { PayslipModal } from './components/PayslipModal';
-import { Printer, ArrowLeft, Send, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Printer, ArrowLeft, Loader2, Image as ImageIcon, MessageCircle, Download } from 'lucide-react';
 import { openWhatsAppPayslip } from './utils/whatsapp';
 import {
   captureElementToBlob,
@@ -35,6 +35,12 @@ export default function App() {
   const showToast = (text: string, type: 'info' | 'success' = 'info') => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 5000);
+  };
+
+  const handleWhatsAppText = () => {
+    if (!selectedEmployee) return;
+    showToast(`🚀 ກຳລັງເປີດ WhatsApp ເພື່ອສົ່ງຂໍ້ຄວາມໃຫ້ ${selectedEmployee.name}`, 'info');
+    openWhatsAppPayslip(selectedEmployee, periodId);
   };
 
   const handleWhatsAppWithImage = async () => {
@@ -203,36 +209,45 @@ export default function App() {
               )}
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
+              <div className="grid grid-cols-2 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
                 {selectedEmployee && (
                   <>
                     <button
+                      onClick={handleWhatsAppText}
+                      aria-label={`ສົ່ງຂໍ້ຄວາມ WhatsApp ໃຫ້ ${selectedEmployee.name}`}
+                      className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                      title="Send WhatsApp text message"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+                      <span>ສົ່ງຂໍ້ຄວາມ</span>
+                    </button>
+                    <button
                       onClick={handleWhatsAppWithImage}
                       disabled={isProcessingWhatsApp}
-                      aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${selectedEmployee.name} (ພ້ອມຄັດລອກຮູບ)`}
-                      className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+                      aria-label={`ສົ່ງຮູບໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${selectedEmployee.name}`}
+                      className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white text-xs font-bold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
                       title="Copy image to clipboard & Send via WhatsApp"
                     >
                       {isProcessingWhatsApp ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0f172a]" aria-hidden="true" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" aria-hidden="true" />
                       ) : (
-                        <Send className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+                        <ImageIcon className="w-3.5 h-3.5 text-white" aria-hidden="true" />
                       )}
-                      <span>WhatsApp</span>
+                      <span>ສົ່ງຮູບ WhatsApp</span>
                     </button>
                     <button
                       onClick={handleDownloadImage}
                       disabled={isDownloadingImage}
                       aria-label="ດາວໂຫຼດຮູບໃບແຈ້ງເງິນເດືອນ (PNG)"
-                      className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-bold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+                      className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-slate-200 border border-slate-700 text-xs font-semibold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
                       title="Download payslip as PNG image"
                     >
                       {isDownloadingImage ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" aria-hidden="true" />
                       ) : (
-                        <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                        <Download className="w-3.5 h-3.5 text-slate-300" aria-hidden="true" />
                       )}
-                      <span>ຮູບ (PNG)</span>
+                      <span>ດາວໂຫຼດຮູບ</span>
                     </button>
                   </>
                 )}

@@ -11,7 +11,8 @@ import {
   Users,
   Wallet,
   SendHorizontal,
-  Loader2
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { EmployeeRecord } from '../types/payroll';
 import { parseExcelFile } from '../utils/excelParser';
@@ -165,8 +166,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }, duration);
   };
 
-  // Handle WhatsApp dispatch with automatic slip image copy to clipboard
-  const handleSendWhatsApp = async (emp: EmployeeRecord) => {
+  // Handle WhatsApp dispatch with text message only
+  const handleSendWhatsAppText = (emp: EmployeeRecord) => {
+    if (!emp.phone || emp.phone.trim() === '') {
+      alert('ບໍ່ມີເບີໂທສຳລັບພະນັກງານນີ້ (No phone number found for this employee)');
+      return;
+    }
+
+    const updated = employees.map((item) =>
+      item.id === emp.id ? { ...item, payslip_sent: true } : item
+    );
+    onEmployeesUpdated(updated);
+    saveEmployeesToStorage(periodId, updated);
+
+    showToast(`🚀 ກຳລັງເປີດ WhatsApp ເພື່ອສົ່ງຂໍ້ຄວາມໃຫ້ ${emp.name}`, 'info', 4000);
+    openWhatsAppPayslip(emp, periodId);
+  };
+
+  // Handle WhatsApp dispatch with payslip image copy to clipboard
+  const handleSendWhatsAppImage = async (emp: EmployeeRecord) => {
     if (!emp.phone || emp.phone.trim() === '') {
       alert('ບໍ່ມີເບີໂທສຳລັບພະນັກງານນີ້ (No phone number found for this employee)');
       return;
@@ -206,7 +224,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         6000
       );
     } else {
-      showToast(`🚀 ກຳລັງເປີດ WhatsApp ເພື່ອສົ່ງຂໍ້ຄວາມໃຫ້ ${emp.name}`, 'info', 4000);
+      showToast(`🚀 ກຳລັງເປີດ WhatsApp...`, 'info', 4000);
     }
 
     openWhatsAppPayslip(emp, periodId);
@@ -545,32 +563,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* Mobile Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  {/* Mobile Action Buttons: Split into Text, Image, and View */}
+                  <div className="grid grid-cols-3 gap-1.5 pt-0.5">
                     <button
-                      onClick={() => handleSendWhatsApp(emp)}
+                      onClick={() => handleSendWhatsAppText(emp)}
+                      aria-label={`ສົ່ງຂໍ້ຄວາມ WhatsApp ໃຫ້ ${emp.name}`}
+                      className="flex items-center justify-center gap-1 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-2 py-2.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-xs min-h-[40px] focus-visible:ring-2 focus-visible:ring-white"
+                      title="Send WhatsApp text message"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+                      <span>ຂໍ້ຄວາມ</span>
+                    </button>
+                    <button
+                      onClick={() => handleSendWhatsAppImage(emp)}
                       disabled={capturingEmpId === emp.id}
-                      aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${emp.name}`}
-                      className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-3 py-2.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-xs min-h-[42px] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60"
+                      aria-label={`ສົ່ງຮູບໃບເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${emp.name}`}
+                      className="flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white px-2 py-2.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-xs min-h-[40px] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60"
+                      title="Copy payslip image & open WhatsApp"
                     >
                       {capturingEmpId === emp.id ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-[#0f172a]" aria-hidden="true" />
-                          <span>ກຳລັງສ້າງ...</span>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" aria-hidden="true" />
+                          <span>ສ້າງຮູບ...</span>
                         </>
                       ) : (
                         <>
-                          <MessageCircle className="w-4 h-4 text-[#0f172a]" aria-hidden="true" />
-                          <span>WhatsApp</span>
+                          <ImageIcon className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+                          <span>ຮູບໃບເງິນ</span>
                         </>
                       )}
                     </button>
                     <button
                       onClick={() => onViewEmployee(emp)}
                       aria-label={`ເບິ່ງໃບແຈ້ງເງິນເດືອນຂອງ ${emp.name}`}
-                      className="flex items-center justify-center gap-1.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white px-3 py-2.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-xs min-h-[42px] focus-visible:ring-2 focus-visible:ring-white"
+                      className="flex items-center justify-center gap-1 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white px-2 py-2.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-xs min-h-[40px] focus-visible:ring-2 focus-visible:ring-white"
+                      title="View payslip document"
                     >
-                      <Eye className="w-4 h-4" aria-hidden="true" />
+                      <Eye className="w-3.5 h-3.5 text-white" aria-hidden="true" />
                       <span>ເບິ່ງໃບເງິນ</span>
                     </button>
                   </div>
@@ -590,7 +619,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <th scope="col" className="p-3.5">ເບີໂທ (Phone)</th>
                     <th scope="col" className="p-3.5 text-right">ຮັບສຸດທິ (Net Pay)</th>
                     <th scope="col" className="p-3.5 text-center">ສະຖານະ</th>
-                    <th scope="col" className="p-3.5 text-center min-w-[200px]">ຈັດການ (Action)</th>
+                    <th scope="col" className="p-3.5 text-center min-w-[220px]">ຈັດການ (Action)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200">
@@ -617,33 +646,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         )}
                       </td>
                       <td className="p-3.5">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
                           <button
-                            onClick={() => handleSendWhatsApp(emp)}
+                            onClick={() => handleSendWhatsAppText(emp)}
+                            aria-label={`ສົ່ງຂໍ້ຄວາມ WhatsApp ໃຫ້ ${emp.name}`}
+                            className="flex items-center gap-1 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-[11px] whitespace-nowrap min-h-[34px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                            title="Send WhatsApp text message"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+                            <span>ຂໍ້ຄວາມ</span>
+                          </button>
+                          <button
+                            onClick={() => handleSendWhatsAppImage(emp)}
                             disabled={capturingEmpId === emp.id}
-                            aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${emp.name}`}
-                            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-3 py-1.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-[11px] whitespace-nowrap min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
-                            title="Send payslip summary via WhatsApp"
+                            aria-label={`ສົ່ງຮູບໃບເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${emp.name}`}
+                            className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-[11px] whitespace-nowrap min-h-[34px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+                            title="Copy payslip image & open WhatsApp"
                           >
                             {capturingEmpId === emp.id ? (
                               <>
-                                <Loader2 className="w-4 h-4 animate-spin text-[#0f172a]" aria-hidden="true" />
-                                <span>ກຳລັງສ້າງ...</span>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" aria-hidden="true" />
+                                <span>ສ້າງຮູບ...</span>
                               </>
                             ) : (
                               <>
-                                <MessageCircle className="w-4 h-4 text-[#0f172a]" aria-hidden="true" />
-                                <span>WhatsApp</span>
+                                <ImageIcon className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+                                <span>ຮູບໃບເງິນ</span>
                               </>
                             )}
                           </button>
                           <button
                             onClick={() => onViewEmployee(emp)}
                             aria-label={`ເບິ່ງໃບແຈ້ງເງິນເດືອນຂອງ ${emp.name}`}
-                            className="flex items-center gap-1 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white px-3 py-1.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-[11px] whitespace-nowrap min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                            className="flex items-center gap-1 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white px-2.5 py-1.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-[11px] whitespace-nowrap min-h-[34px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                             title="View payslip document"
                           >
-                            <Eye className="w-4 h-4" aria-hidden="true" />
+                            <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>ເບິ່ງ</span>
                           </button>
                         </div>
