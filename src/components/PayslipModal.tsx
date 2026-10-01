@@ -1,8 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Printer, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Printer, Send, ChevronLeft, ChevronRight, Loader2, Image as ImageIcon } from 'lucide-react';
 import { EmployeeRecord } from '../types/payroll';
 import { Payslip } from './Payslip';
 import { openWhatsAppPayslip } from '../utils/whatsapp';
+import {
+  captureElementToBlob,
+  copyBlobToClipboard,
+  downloadImageBlob,
+  getPayslipFilename
+} from '../utils/payslipImage';
 
 interface PayslipModalProps {
   employee: EmployeeRecord | null;
@@ -26,6 +32,64 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [scale, setScale] = useState<number>(1);
+  const [isProcessingWhatsApp, setIsProcessingWhatsApp] = useState(false);
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [modalToast, setModalToast] = useState<{ text: string; type: 'info' | 'success' } | null>(null);
+
+  const showModalToast = (text: string, type: 'info' | 'success' = 'info') => {
+    setModalToast({ text, type });
+    setTimeout(() => setModalToast(null), 5000);
+  };
+
+  const handleWhatsAppWithImage = async () => {
+    if (!employee) return;
+    setIsProcessingWhatsApp(true);
+    showModalToast('⏳ ກຳລັງສ້າງຮູບໃບເງິນເດືອນ...', 'info');
+
+    try {
+      let copied = false;
+      const slipEl =
+        (containerRef.current?.querySelector('#payslip-document') as HTMLElement) ||
+        containerRef.current;
+
+      if (slipEl) {
+        const blob = await captureElementToBlob(slipEl);
+        if (blob) {
+          copied = await copyBlobToClipboard(blob);
+        }
+      }
+
+      if (copied) {
+        showModalToast('📋 ຄັດລອກຮູບແລ້ວ! ກຳລັງເປີດ WhatsApp (ກົດ Paste ເພື່ອສົ່ງຮູບ)', 'success');
+      } else {
+        showModalToast('🚀 ກຳລັງເປີດ WhatsApp...', 'info');
+      }
+
+      openWhatsAppPayslip(employee, periodId);
+    } finally {
+      setIsProcessingWhatsApp(false);
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!employee) return;
+    setIsDownloadingImage(true);
+    try {
+      const slipEl =
+        (containerRef.current?.querySelector('#payslip-document') as HTMLElement) ||
+        containerRef.current;
+      if (slipEl) {
+        const blob = await captureElementToBlob(slipEl);
+        if (blob) {
+          const filename = getPayslipFilename(employee, periodId);
+          downloadImageBlob(blob, filename);
+          showModalToast(`✅ ດາວໂຫຼດຮູບ ${filename} ສຳເລັດແລ້ວ!`, 'success');
+        }
+      }
+    } finally {
+      setIsDownloadingImage(false);
+    }
+  };
 
   // Stepper calculations
   const currentIndex = employee && employees.length > 0
@@ -147,6 +211,28 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 
       {/* Modal Card */}
       <div ref={modalRef} className="relative z-10 w-full max-w-[490px] max-h-[96vh] flex flex-col items-center">
+        {/* Toast notification inside modal */}
+        {modalToast && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`w-full mb-2 px-3 py-2 rounded-lg text-xs font-semibold text-center shadow-lg transition-all flex items-center justify-between gap-2 ${
+              modalToast.type === 'success'
+                ? 'bg-emerald-600 text-white border border-emerald-400'
+                : 'bg-sky-600 text-white border border-sky-400'
+            }`}
+          >
+            <span className="flex-1">{modalToast.text}</span>
+            <button
+              onClick={() => setModalToast(null)}
+              className="text-white/80 hover:text-white text-xs px-1 cursor-pointer"
+              aria-label="ປິດແຈ້ງເຕືອນ"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Actions bar */}
         <div className="w-full flex justify-between items-center mb-2 px-1 text-white no-print gap-2">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0">
@@ -187,13 +273,32 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
-              onClick={() => openWhatsAppPayslip(employee, periodId)}
-              aria-label="ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp"
-              className="flex items-center gap-1 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold px-2.5 sm:px-3 py-2 rounded-lg transition shadow-md cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white"
-              title="Send via WhatsApp"
+              onClick={handleWhatsAppWithImage}
+              disabled={isProcessingWhatsApp}
+              aria-label="ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp (ພ້ອມຄັດລອກຮູບໃສ່ Clipboard)"
+              className="flex items-center gap-1 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold px-2.5 sm:px-3 py-2 rounded-lg transition shadow-md cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60"
+              title="Copy image to clipboard & Send via WhatsApp"
             >
-              <Send className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+              {isProcessingWhatsApp ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0f172a]" aria-hidden="true" />
+              ) : (
+                <Send className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+              )}
               <span className="hidden sm:inline">WhatsApp</span>
+            </button>
+            <button
+              onClick={handleDownloadImage}
+              disabled={isDownloadingImage}
+              aria-label="ດາວໂຫຼດຮູບໃບແຈ້ງເງິນເດືອນ (PNG)"
+              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-bold px-2.5 sm:px-3 py-2 rounded-lg transition shadow-md cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+              title="Download payslip image (PNG)"
+            >
+              {isDownloadingImage ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              <span className="hidden sm:inline">ຮູບ (PNG)</span>
             </button>
             <button
               onClick={handlePrint}
@@ -202,7 +307,7 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
               title="Print payslip"
             >
               <Printer className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">ພິມ (Print)</span>
+              <span className="hidden sm:inline">ພິມ</span>
             </button>
             <button
               ref={closeButtonRef}

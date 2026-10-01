@@ -6,8 +6,14 @@ import { Navbar } from './components/Navbar';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Payslip } from './components/Payslip';
 import { PayslipModal } from './components/PayslipModal';
-import { Printer, ArrowLeft, Send } from 'lucide-react';
+import { Printer, ArrowLeft, Send, Loader2, Image as ImageIcon } from 'lucide-react';
 import { openWhatsAppPayslip } from './utils/whatsapp';
+import {
+  captureElementToBlob,
+  copyBlobToClipboard,
+  downloadImageBlob,
+  getPayslipFilename,
+} from './utils/payslipImage';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 
@@ -22,6 +28,68 @@ export default function App() {
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeRecord | null>(null);
   const [activeTab, setActiveTab] = useState<'admin' | 'slip'>(initialEmpId ? 'slip' : 'admin');
   const [modalEmployee, setModalEmployee] = useState<EmployeeRecord | null>(null);
+  const [isProcessingWhatsApp, setIsProcessingWhatsApp] = useState(false);
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [toast, setToast] = useState<{ text: string; type: 'info' | 'success' } | null>(null);
+
+  const showToast = (text: string, type: 'info' | 'success' = 'info') => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  const handleWhatsAppWithImage = async () => {
+    if (!selectedEmployee) return;
+    setIsProcessingWhatsApp(true);
+    showToast('⏳ ກຳລັງສ້າງຮູບໃບເງິນເດືອນ...', 'info');
+
+    try {
+      let copied = false;
+      const slipEl =
+        (document.querySelector('#panel-slip #payslip-document') as HTMLElement) ||
+        (document.querySelector('#panel-slip') as HTMLElement);
+
+      if (slipEl) {
+        const blob = await captureElementToBlob(slipEl);
+        if (blob) {
+          copied = await copyBlobToClipboard(blob);
+        }
+      }
+
+      if (copied) {
+        showToast(
+          `📋 ຄັດລອກຮູບແລ້ວ! ກຳລັງເປີດ WhatsApp (ກົດ Paste ເພື່ອສົ່ງຮູບໃຫ້ ${selectedEmployee.name})`,
+          'success'
+        );
+      } else {
+        showToast('🚀 ກຳລັງເປີດ WhatsApp...', 'info');
+      }
+
+      openWhatsAppPayslip(selectedEmployee, periodId);
+    } finally {
+      setIsProcessingWhatsApp(false);
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!selectedEmployee) return;
+    setIsDownloadingImage(true);
+    try {
+      const slipEl =
+        (document.querySelector('#panel-slip #payslip-document') as HTMLElement) ||
+        (document.querySelector('#panel-slip') as HTMLElement);
+
+      if (slipEl) {
+        const blob = await captureElementToBlob(slipEl);
+        if (blob) {
+          const filename = getPayslipFilename(selectedEmployee, periodId);
+          downloadImageBlob(blob, filename);
+          showToast(`✅ ດາວໂຫຼດຮູບ ${filename} ສຳເລັດແລ້ວ!`, 'success');
+        }
+      }
+    } finally {
+      setIsDownloadingImage(false);
+    }
+  };
 
   // Hardware Back Button listener on Android mobile
   useEffect(() => {
@@ -135,16 +203,38 @@ export default function App() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+              <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end flex-wrap">
                 {selectedEmployee && (
-                  <button
-                    onClick={() => openWhatsAppPayslip(selectedEmployee, periodId)}
-                    aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${selectedEmployee.name}`}
-                    className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                  >
-                    <Send className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
-                    <span>WhatsApp</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={handleWhatsAppWithImage}
+                      disabled={isProcessingWhatsApp}
+                      aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${selectedEmployee.name} (ພ້ອມຄັດລອກຮູບ)`}
+                      className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+                      title="Copy image to clipboard & Send via WhatsApp"
+                    >
+                      {isProcessingWhatsApp ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0f172a]" aria-hidden="true" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+                      )}
+                      <span>WhatsApp</span>
+                    </button>
+                    <button
+                      onClick={handleDownloadImage}
+                      disabled={isDownloadingImage}
+                      aria-label="ດາວໂຫຼດຮູບໃບແຈ້ງເງິນເດືອນ (PNG)"
+                      className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+                      title="Download payslip as PNG image"
+                    >
+                      {isDownloadingImage ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      <span>ຮູບ (PNG)</span>
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => window.print()}
@@ -156,6 +246,28 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            {/* Notification Toast */}
+            {toast && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={`w-full p-3 rounded-xl text-xs sm:text-sm font-semibold text-center shadow-lg transition-all flex items-center justify-between gap-3 ${
+                  toast.type === 'success'
+                    ? 'bg-emerald-700 text-white border border-emerald-500'
+                    : 'bg-sky-700 text-white border border-sky-500'
+                }`}
+              >
+                <span className="flex-1">{toast.text}</span>
+                <button
+                  onClick={() => setToast(null)}
+                  className="text-white/80 hover:text-white text-sm px-2 cursor-pointer"
+                  aria-label="ປິດແຈ້ງເຕືອນ"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* Document container */}
             {selectedEmployee ? (

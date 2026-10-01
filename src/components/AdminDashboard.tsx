@@ -10,7 +10,8 @@ import {
   Calendar,
   Users,
   Wallet,
-  SendHorizontal
+  SendHorizontal,
+  Loader2
 } from 'lucide-react';
 import { EmployeeRecord } from '../types/payroll';
 import { parseExcelFile } from '../utils/excelParser';
@@ -18,6 +19,8 @@ import { parsePdfFile } from '../utils/pdfParser';
 import { openWhatsAppPayslip } from '../utils/whatsapp';
 import { clearEmployeesFromStorage, exportJsonBackup, saveEmployeesToStorage } from '../utils/storage';
 import { formatNum } from '../utils/formatters';
+import { Payslip } from './Payslip';
+import { captureElementToBlob, copyBlobToClipboard } from '../utils/payslipImage';
 
 interface AdminDashboardProps {
   periodId: string;
@@ -148,16 +151,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  // Handle WhatsApp dispatch
-  const handleSendWhatsApp = (emp: EmployeeRecord) => {
-    const opened = openWhatsAppPayslip(emp, periodId);
-    if (!opened) return;
+  const [capturingEmp, setCapturingEmp] = useState<EmployeeRecord | null>(null);
+  const [capturingEmpId, setCapturingEmpId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ text: string; type: 'info' | 'success' | 'warning' } | null>(null);
+  const offscreenSlipRef = useRef<HTMLDivElement>(null);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (text: string, type: 'info' | 'success' | 'warning' = 'info', duration = 5000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ text, type });
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, duration);
+  };
+
+  // Handle WhatsApp dispatch with automatic slip image copy to clipboard
+  const handleSendWhatsApp = async (emp: EmployeeRecord) => {
+    if (!emp.phone || emp.phone.trim() === '') {
+      alert('ບໍ່ມີເບີໂທສຳລັບພະນັກງານນີ້ (No phone number found for this employee)');
+      return;
+    }
+
+    setCapturingEmpId(emp.id);
+    setCapturingEmp(emp);
+    showToast(`⏳ ກຳລັງສ້າງຮູບໃບເງິນເດືອນຂອງ ${emp.name}...`, 'info', 10000);
+
+    // Give offscreen component time to mount and render
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    let copied = false;
+    if (offscreenSlipRef.current) {
+      const slipEl =
+        (offscreenSlipRef.current.querySelector('#payslip-document') as HTMLElement) ||
+        offscreenSlipRef.current;
+      const blob = await captureElementToBlob(slipEl);
+      if (blob) {
+        copied = await copyBlobToClipboard(blob);
+      }
+    }
+
+    setCapturingEmp(null);
+    setCapturingEmpId(null);
 
     const updated = employees.map((item) =>
       item.id === emp.id ? { ...item, payslip_sent: true } : item
     );
     onEmployeesUpdated(updated);
     saveEmployeesToStorage(periodId, updated);
+
+    if (copied) {
+      showToast(
+        `📋 ຄັດລອກຮູບໃບເງິນເດືອນແລ້ວ! ກຳລັງເປີດ WhatsApp (ກົດ Paste ເພື່ອສົ່ງຮູບໃຫ້ ${emp.name})`,
+        'success',
+        6000
+      );
+    } else {
+      showToast(`🚀 ກຳລັງເປີດ WhatsApp ເພື່ອສົ່ງຂໍ້ຄວາມໃຫ້ ${emp.name}`, 'info', 4000);
+    }
+
+    openWhatsAppPayslip(emp, periodId);
   };
 
   return (
@@ -497,11 +549,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="grid grid-cols-2 gap-2 pt-0.5">
                     <button
                       onClick={() => handleSendWhatsApp(emp)}
+                      disabled={capturingEmpId === emp.id}
                       aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${emp.name}`}
-                      className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-3 py-2.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-xs min-h-[42px] focus-visible:ring-2 focus-visible:ring-white"
+                      className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-3 py-2.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-xs min-h-[42px] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60"
                     >
-                      <MessageCircle className="w-4 h-4 text-[#0f172a]" aria-hidden="true" />
-                      <span>WhatsApp</span>
+                      {capturingEmpId === emp.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-[#0f172a]" aria-hidden="true" />
+                          <span>ກຳລັງສ້າງ...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="w-4 h-4 text-[#0f172a]" aria-hidden="true" />
+                          <span>WhatsApp</span>
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={() => onViewEmployee(emp)}
@@ -558,12 +620,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleSendWhatsApp(emp)}
+                            disabled={capturingEmpId === emp.id}
                             aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${emp.name}`}
-                            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-3 py-1.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-[11px] whitespace-nowrap min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] px-3 py-1.5 rounded-lg font-bold transition shadow-sm cursor-pointer text-[11px] whitespace-nowrap min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
                             title="Send payslip summary via WhatsApp"
                           >
-                            <MessageCircle className="w-4 h-4 text-[#0f172a]" aria-hidden="true" />
-                            <span>WhatsApp</span>
+                            {capturingEmpId === emp.id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-[#0f172a]" aria-hidden="true" />
+                                <span>ກຳລັງສ້າງ...</span>
+                              </>
+                            ) : (
+                              <>
+                                <MessageCircle className="w-4 h-4 text-[#0f172a]" aria-hidden="true" />
+                                <span>WhatsApp</span>
+                              </>
+                            )}
                           </button>
                           <button
                             onClick={() => onViewEmployee(emp)}
@@ -584,6 +656,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Offscreen Payslip Renderer for Image Capture */}
+      <div
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: '460px',
+          pointerEvents: 'none',
+          zIndex: -9999,
+        }}
+        aria-hidden="true"
+      >
+        {capturingEmp && (
+          <div ref={offscreenSlipRef} className="bg-white p-3">
+            <Payslip employee={capturingEmp} periodId={periodId} isCompact={true} />
+          </div>
+        )}
+      </div>
+
+      {/* Global Toast Banner */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-[92vw] sm:max-w-lg w-full px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md border flex items-center justify-between gap-3 text-xs sm:text-sm font-medium transition-all"
+          style={{
+            backgroundColor: toast.type === 'success' ? 'rgba(6, 78, 59, 0.95)' : 'rgba(15, 23, 42, 0.95)',
+            borderColor: toast.type === 'success' ? '#10b981' : '#0097E0',
+            color: '#ffffff',
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <span>{toast.text}</span>
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="text-white/70 hover:text-white p-1 rounded-md cursor-pointer"
+            aria-label="ປິດແຈ້ງເຕືອນ"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };
