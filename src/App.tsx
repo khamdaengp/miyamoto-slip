@@ -203,14 +203,14 @@ export default function App() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end flex-wrap">
+              <div className="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
                 {selectedEmployee && (
                   <>
                     <button
                       onClick={handleWhatsAppWithImage}
                       disabled={isProcessingWhatsApp}
                       aria-label={`ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp ໃຫ້ ${selectedEmployee.name} (ພ້ອມຄັດລອກຮູບ)`}
-                      className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+                      className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
                       title="Copy image to clipboard & Send via WhatsApp"
                     >
                       {isProcessingWhatsApp ? (
@@ -224,7 +224,7 @@ export default function App() {
                       onClick={handleDownloadImage}
                       disabled={isDownloadingImage}
                       aria-label="ດາວໂຫຼດຮູບໃບແຈ້ງເງິນເດືອນ (PNG)"
-                      className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+                      className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-bold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
                       title="Download payslip as PNG image"
                     >
                       {isDownloadingImage ? (
@@ -239,10 +239,10 @@ export default function App() {
                 <button
                   onClick={() => window.print()}
                   aria-label="ພິມໃບແຈ້ງເງິນເດືອນ (Print A4)"
-                  className="flex items-center gap-1.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                  className="flex items-center justify-center gap-1.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white text-xs font-bold py-2 px-2 rounded-lg transition shadow-sm cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                 >
                   <Printer className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>ພິມ (Print A4)</span>
+                  <span>ພິມ</span>
                 </button>
               </div>
             </div>

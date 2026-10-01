@@ -179,10 +179,14 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 
     const computeScale = () => {
       if (!containerRef.current) return;
-      const availH = window.innerHeight - 80;
+      if (window.innerWidth < 640) {
+        setScale(1);
+        return;
+      }
+      const availH = window.innerHeight - 130;
       const naturalH = containerRef.current.scrollHeight;
       if (naturalH > 0 && availH < naturalH) {
-        setScale(Math.max(0.65, Math.min(1, availH / naturalH)));
+        setScale(Math.max(0.7, Math.min(1, availH / naturalH)));
       } else {
         setScale(1);
       }
@@ -204,13 +208,17 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-employee-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-xs no-print-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-xs no-print-backdrop overflow-y-auto"
+      style={{
+        paddingTop: 'max(10px, env(safe-area-inset-top, 10px))',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
+      }}
     >
       {/* Backdrop click */}
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 
       {/* Modal Card */}
-      <div ref={modalRef} className="relative z-10 w-full max-w-[490px] max-h-[96vh] flex flex-col items-center">
+      <div ref={modalRef} className="relative z-10 w-full max-w-[500px] flex flex-col items-center my-auto">
         {/* Toast notification inside modal */}
         {modalToast && (
           <div
@@ -234,104 +242,116 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
         )}
 
         {/* Actions bar */}
-        <div className="w-full flex justify-between items-center mb-2 px-1 text-white no-print gap-2">
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-            {/* Stepper buttons if multiple employees */}
-            {employees.length > 1 && (
-              <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-700/80 shrink-0">
-                <button
-                  onClick={handlePrev}
-                  disabled={!canPrev}
-                  aria-label="ພະນັກງານກ່ອນໜ້າ (Previous employee)"
-                  className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white"
-                  title="Previous employee (← Arrow Left)"
-                >
-                  <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-                </button>
-                <span className="text-[11px] font-mono px-1.5 text-slate-400">
-                  {currentIndex + 1}/{employees.length}
-                </span>
-                <button
-                  onClick={handleNext}
-                  disabled={!canNext}
-                  aria-label="ພະນັກງານຕໍ່ໄປ (Next employee)"
-                  className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white"
-                  title="Next employee (→ Arrow Right)"
-                >
-                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
-                </button>
-              </div>
-            )}
-
-            <span
-              id="modal-employee-title"
-              className="text-xs font-semibold bg-slate-900/90 text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-700/80 truncate max-w-[140px] sm:max-w-none"
-            >
-              {employee.employeeId} - {employee.name}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <button
-              onClick={handleWhatsAppWithImage}
-              disabled={isProcessingWhatsApp}
-              aria-label="ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp (ພ້ອມຄັດລອກຮູບໃສ່ Clipboard)"
-              className="flex items-center gap-1 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold px-2.5 sm:px-3 py-2 rounded-lg transition shadow-md cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60"
-              title="Copy image to clipboard & Send via WhatsApp"
-            >
-              {isProcessingWhatsApp ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0f172a]" aria-hidden="true" />
-              ) : (
-                <Send className="w-3.5 h-3.5 text-[#0f172a]" aria-hidden="true" />
+        <div className="w-full flex flex-col gap-2 mb-2 px-0.5 text-white no-print">
+          {/* Top Row: Navigation + Employee Name + Close Button */}
+          <div className="flex items-center justify-between gap-2 bg-slate-900/95 p-1.5 sm:p-2 rounded-xl border border-slate-700/80 shadow-md">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {employees.length > 1 && (
+                <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shrink-0">
+                  <button
+                    onClick={handlePrev}
+                    disabled={!canPrev}
+                    aria-label="ພະນັກງານກ່ອນໜ້າ"
+                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none transition cursor-pointer min-h-[30px] min-w-[30px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white"
+                    title="Previous employee (← Arrow Left)"
+                  >
+                    <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                  <span className="text-[11px] font-mono px-1.5 text-slate-400 font-semibold">
+                    {currentIndex + 1}/{employees.length}
+                  </span>
+                  <button
+                    onClick={handleNext}
+                    disabled={!canNext}
+                    aria-label="ພະນັກງານຕໍ່ໄປ"
+                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-25 disabled:pointer-events-none transition cursor-pointer min-h-[30px] min-w-[30px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white"
+                    title="Next employee (→ Arrow Right)"
+                  >
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                </div>
               )}
-              <span className="hidden sm:inline">WhatsApp</span>
-            </button>
-            <button
-              onClick={handleDownloadImage}
-              disabled={isDownloadingImage}
-              aria-label="ດາວໂຫຼດຮູບໃບແຈ້ງເງິນເດືອນ (PNG)"
-              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-bold px-2.5 sm:px-3 py-2 rounded-lg transition shadow-md cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
-              title="Download payslip image (PNG)"
-            >
-              {isDownloadingImage ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-              ) : (
-                <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
-              )}
-              <span className="hidden sm:inline">ຮູບ (PNG)</span>
-            </button>
-            <button
-              onClick={handlePrint}
-              aria-label="ພິມໃບແຈ້ງເງິນເດືອນ (Print)"
-              className="flex items-center gap-1.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white text-xs font-bold px-2.5 sm:px-3 py-2 rounded-lg transition shadow-md cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-              title="Print payslip"
-            >
-              <Printer className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">ພິມ</span>
-            </button>
+
+              <span
+                id="modal-employee-title"
+                className="text-xs font-semibold text-slate-200 truncate px-1"
+                title={`${employee.employeeId} - ${employee.name}`}
+              >
+                <span className="text-[#0097E0] font-mono font-bold mr-1.5">{employee.employeeId}</span>
+                <span className="truncate">{employee.name}</span>
+              </span>
+            </div>
+
             <button
               ref={closeButtonRef}
               onClick={onClose}
               aria-label="ປິດໜ້າຕ່າງໃບແຈ້ງເງິນເດືອນ (Close modal)"
-              className="bg-red-700 hover:bg-red-800 active:scale-[0.98] text-white p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition cursor-pointer shadow-md focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+              className="bg-red-700 hover:bg-red-800 active:scale-[0.95] text-white p-1.5 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-lg transition cursor-pointer shadow-md focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none shrink-0"
               title="Close modal"
             >
               <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
+
+          {/* Action Row: 3 equal, large tap-target buttons */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+            <button
+              onClick={handleWhatsAppWithImage}
+              disabled={isProcessingWhatsApp}
+              aria-label="ສົ່ງໃບແຈ້ງເງິນເດືອນຜ່ານ WhatsApp"
+              className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebd5c] active:scale-[0.98] text-[#0f172a] text-xs font-bold py-2 px-2 rounded-lg transition shadow-md cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60"
+              title="Copy image to clipboard & Send via WhatsApp"
+            >
+              {isProcessingWhatsApp ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#0f172a]" aria-hidden="true" />
+              ) : (
+                <Send className="w-4 h-4 text-[#0f172a]" aria-hidden="true" />
+              )}
+              <span>WhatsApp</span>
+            </button>
+            <button
+              onClick={handleDownloadImage}
+              disabled={isDownloadingImage}
+              aria-label="ດາວໂຫຼດຮູບໃບແຈ້ງເງິນເດືອນ (PNG)"
+              className="flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white text-xs font-bold py-2 px-2 rounded-lg transition shadow-md cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-60"
+              title="Download payslip image (PNG)"
+            >
+              {isDownloadingImage ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white" aria-hidden="true" />
+              ) : (
+                <ImageIcon className="w-4 h-4 text-white" aria-hidden="true" />
+              )}
+              <span>ຮູບ (PNG)</span>
+            </button>
+            <button
+              onClick={handlePrint}
+              aria-label="ພິມໃບແຈ້ງເງິນເດືອນ (Print)"
+              className="flex items-center justify-center gap-1.5 bg-[#0077b6] hover:bg-[#005f92] active:scale-[0.98] text-white text-xs font-bold py-2 px-2 rounded-lg transition shadow-md cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+              title="Print payslip"
+            >
+              <Printer className="w-4 h-4 text-white" aria-hidden="true" />
+              <span>ພິມ</span>
+            </button>
+          </div>
         </div>
 
-        {/* Scaled Wrapper */}
+        {/* Scrollable Document Wrapper */}
         <div
-          className="w-full overflow-hidden flex justify-center items-start rounded shadow-2xl bg-white"
+          className="w-full max-h-[calc(100dvh-140px)] overflow-y-auto overflow-x-hidden flex justify-center items-start rounded-xl shadow-2xl bg-white border border-slate-700/50"
           style={{
-            height: containerRef.current && scale < 1 ? `${containerRef.current.scrollHeight * scale}px` : 'auto'
+            height:
+              typeof window !== 'undefined' && window.innerWidth >= 640 && containerRef.current && scale < 1
+                ? `${containerRef.current.scrollHeight * scale}px`
+                : 'auto'
           }}
         >
           <div
             ref={containerRef}
             style={{
-              transform: scale < 1 ? `scale(${scale})` : undefined,
+              transform:
+                typeof window !== 'undefined' && window.innerWidth >= 640 && scale < 1
+                  ? `scale(${scale})`
+                  : undefined,
               transformOrigin: 'top center',
               width: '100%'
             }}
