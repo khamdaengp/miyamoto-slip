@@ -19,6 +19,7 @@ export interface EmployeeRecord {
     night: number;
     safety: number;
     coop: number;
+    skill: number;
     diligence: number;
     fiveS: number;
     housing: number;

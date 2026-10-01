@@ -143,6 +143,7 @@ function parsePayslipPage(lines: PageLine[], pageIndex: number): EmployeeRecord 
   const night = findValue(['ເງິນກາງຄືນ', 'ເງິນກະກາງຄືນ', 'Night']);
   const safety = findValue(['ເງິນຄວາມປອດໄພ', 'Safety']);
   const coop = findValue(['ເງິນຄວາມຮ່ວມມື', 'ເງິນຄວາມ ຮວມມື', 'Cooperation']);
+  const skill = findValue(['ເງີນທັກສະ', 'ເງິນທັກສະ', 'Skill Allowance', 'Skill', 'Other Allowance']);
   const diligence = findValue(['ເງິນຄວາມສະຫຍັນ', 'ເງິນຄວາມຂະຫຍັນ', 'Diligence']);
   const fiveS = findValue(['ເງິນຄວາມສະອາດ5ສ', '5S']);
   const housing = findValue(['ເງິນຄ່າທີ່ພັກ', 'Housing']);
@@ -151,7 +152,7 @@ function parsePayslipPage(lines: PageLine[], pageIndex: number): EmployeeRecord 
   const gas = findValue(['ເງິນນ້ຳມັນ', 'Fuel', 'Gas']);
   const totalEarningsFound = findValue(['ລວມຮັບ', 'Total Earnings']);
   const calculatedEarnings =
-    basicSalary + ot + night + safety + coop + diligence + fiveS + housing + target + positionEarn + gas;
+    basicSalary + ot + night + safety + coop + skill + diligence + fiveS + housing + target + positionEarn + gas;
   const totalEarnings = totalEarningsFound > 0 ? totalEarningsFound : calculatedEarnings;
 
   // Deductions
@@ -201,6 +202,7 @@ function parsePayslipPage(lines: PageLine[], pageIndex: number): EmployeeRecord 
       night,
       safety,
       coop,
+      skill,
       diligence,
       fiveS,
       housing,
@@ -275,6 +277,7 @@ function parseTabularLines(lines: PageLine[], startIndex: number): EmployeeRecor
         night: 0,
         safety: 0,
         coop: 0,
+        skill: 0,
         diligence: 0,
         fiveS: 0,
         housing: 0,

@@ -26,6 +26,16 @@ export function parseEmployeeRecord(raw: RawEmployeeData, index: number, default
   const night = toNum(raw['ເງິນກະກາງຄືນ'] || raw['Night Shift Allowance']);
   const safety = toNum(raw['ເງິນຄວາມປອດໄພ'] || raw['Safety Allowance']);
   const coop = toNum(raw['ເງິນຄວາມ ຮວມມື'] || raw['Cooperation Allowance']);
+  const skill = toNum(
+    raw['ເງີນທັກສະ'] ||
+    raw['ເງິນທັກສະ'] ||
+    raw['Skill Allowance'] ||
+    raw['Skill'] ||
+    raw['Skills'] ||
+    raw['Other Allowance'] ||
+    raw['__col_M'] ||
+    raw['-']
+  );
   const diligence = toNum(raw['ເງິນຄວາມຂະຫຍັນ'] || raw['Diligence Allowance']);
   const fiveS = toNum(raw['ເງິນຄວາມສະອາດ5ສ'] || raw['5S Allowance']);
   const housing = toNum(raw['ເງິນຄ່າທີ່ພັກ'] || raw['Housing Allowance']);
@@ -33,7 +43,8 @@ export function parseEmployeeRecord(raw: RawEmployeeData, index: number, default
   const positionEarn = toNum(raw['ເງີນຕຳແໜ່ງ'] || raw['Position Allowance']);
   const gas = toNum(raw['ເງິນນ້ຳມັນ'] || raw['Fuel Allowance']);
   const rawTotalEarnings = toNum(raw['ລວມຮັບ'] || raw['Total Earnings']);
-  const calculatedTotalEarnings = basicSalary + ot + night + safety + coop + diligence + fiveS + housing + target + positionEarn + gas;
+  const calculatedTotalEarnings =
+    basicSalary + ot + night + safety + coop + skill + diligence + fiveS + housing + target + positionEarn + gas;
   const totalEarnings = rawTotalEarnings > 0 ? rawTotalEarnings : calculatedTotalEarnings;
 
   // Deductions
@@ -65,6 +76,7 @@ export function parseEmployeeRecord(raw: RawEmployeeData, index: number, default
       night,
       safety,
       coop,
+      skill,
       diligence,
       fiveS,
       housing,
@@ -124,6 +136,15 @@ export async function parseExcelFile(file: File): Promise<EmployeeRecord[]> {
       const val = row[i];
       record[col] = val === undefined || val === null ? "" : String(val).trim();
     });
+
+    // Column M is index 12 (0-based: A=0... M=12)
+    if (row[12] !== undefined && row[12] !== null && String(row[12]).trim() !== '') {
+      record['__col_M'] = String(row[12]).trim();
+      if (!record['ເງີນທັກສະ']) {
+        record['ເງີນທັກສະ'] = String(row[12]).trim();
+      }
+    }
+
     return record;
   });
 

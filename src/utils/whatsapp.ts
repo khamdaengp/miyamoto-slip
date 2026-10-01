@@ -15,6 +15,7 @@ export function buildWhatsAppMessage(employee: EmployeeRecord, periodId: string)
     { lbl: "ເງິນກາງຄືນ", v: employee.earnings.night },
     { lbl: "ເງິນຄວາມປອດໄພ", v: employee.earnings.safety },
     { lbl: "ເງິນຄວາມຮ່ວມມື", v: employee.earnings.coop },
+    { lbl: "ເງີນທັກສະ", v: employee.earnings.skill ?? 0 },
     { lbl: "ເງິນຄວາມສະຫຍັນ", v: employee.earnings.diligence },
     { lbl: "ເງິນຄວາມສະອາດ5ສ", v: employee.earnings.fiveS },
     { lbl: "ເງິນຄ່າທີ່ພັກ", v: employee.earnings.housing },

@@ -19,7 +19,7 @@ export const Payslip: React.FC<PayslipProps> = ({ employee, periodId, isCompact 
     { num: 3, lbl: "ເງິນກາງຄືນ", val: employee.earnings.night },
     { num: 4, lbl: "ເງິນຄວາມປອດໄພ", val: employee.earnings.safety },
     { num: 5, lbl: "ເງິນຄວາມຮ່ວມມື", val: employee.earnings.coop },
-    { num: 6, lbl: "-", val: null },
+    { num: 6, lbl: "ເງີນທັກສະ", val: employee.earnings.skill ?? 0 },
     { num: 7, lbl: "ເງິນຄວາມສະຫຍັນ", val: employee.earnings.diligence },
     { num: 8, lbl: "ເງິນຄວາມສະອາດ5ສ", val: employee.earnings.fiveS },
     { num: 9, lbl: "ເງິນຄ່າທີ່ພັກ", val: employee.earnings.housing },
