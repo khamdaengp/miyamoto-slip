@@ -499,28 +499,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {filteredEmployees.map((emp, index) => (
                 <div key={emp.id} className="p-4 space-y-3 hover:bg-slate-800/20 transition">
                   {/* Top line: Index, Name, Status */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[10px] text-slate-400 font-mono bg-slate-950 px-2 py-0.5 rounded-md border border-slate-800">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-950 px-2 py-0.5 rounded-md border border-slate-800 shrink-0 mt-0.5">
                         #{index + 1}
                       </span>
-                      <div>
-                        <div className="font-bold text-sm text-white">{emp.name}</div>
-                        <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                          <span className="font-mono text-[#0097E0] font-semibold">{emp.employeeId}</span>
-                          <span>•</span>
-                          <span className="truncate max-w-[140px] text-slate-300">{emp.position || '-'}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-sm text-white break-words leading-snug">{emp.name}</div>
+                        <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="font-mono text-[#0097E0] font-semibold shrink-0">{emp.employeeId}</span>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-slate-300 truncate">{emp.position || '-'}</span>
                         </div>
                       </div>
                     </div>
-                    <div>
+                    <div className="shrink-0">
                       {emp.payslip_sent ? (
-                        <span className="inline-flex items-center gap-1 text-[#25D366] font-bold text-[11px] bg-[#25D366]/10 px-2.5 py-1 rounded-full border border-[#25D366]/30">
-                          <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                        <span className="inline-flex items-center gap-1 text-[#25D366] font-bold text-[11px] bg-[#25D366]/10 px-2.5 py-1 rounded-full border border-[#25D366]/30 whitespace-nowrap">
+                          <CheckCircle2 className="w-3 h-3 shrink-0" aria-hidden="true" />
                           <span>ສົ່ງແລ້ວ</span>
                         </span>
                       ) : (
-                        <span className="text-amber-400 font-medium text-[11px] bg-amber-400/10 px-2.5 py-1 rounded-full border border-amber-400/30">
+                        <span className="inline-flex items-center justify-center text-amber-400 font-medium text-[11px] bg-amber-400/10 px-2.5 py-1 rounded-full border border-amber-400/30 whitespace-nowrap">
                           ຍັງບໍ່ສົ່ງ
                         </span>
                       )}
