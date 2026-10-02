@@ -12,14 +12,16 @@ import {
   Wallet,
   SendHorizontal,
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { EmployeeRecord } from '../types/payroll';
 import { parseExcelFile } from '../utils/excelParser';
 import { parsePdfFile } from '../utils/pdfParser';
 import { openWhatsAppPayslip } from '../utils/whatsapp';
 import { clearEmployeesFromStorage, exportJsonBackup, saveEmployeesToStorage } from '../utils/storage';
-import { formatNum } from '../utils/formatters';
+import { formatNum, getPeriodInfo } from '../utils/formatters';
 import { Payslip } from './Payslip';
 import { captureElementToBlob, copyBlobToClipboard } from '../utils/payslipImage';
 
@@ -135,21 +137,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // Handle Clear Storage
-  const handleClearStorage = () => {
-    const confirmed = window.confirm(
-      `ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນທ້ອງຖິ່ນສຳລັບເດືອນ ${periodId}?\n` +
-      `ນີ້ຈະລຶບຂໍ້ມູນເງິນເດືອນທີ່ອັບໂຫຼດໄວ້ (ຮວມທັງສະຖານະ "ສົ່ງແລ້ວ") ອອກຈາກເຄື່ອງນີ້.\n` +
-      `(This will delete the uploaded payroll data for this period from this device. It cannot be undone.)`
-    );
-    if (!confirmed) return;
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
+  // Handle Clear Storage Dialog
+  const handleOpenClearModal = () => {
+    setIsClearModalOpen(true);
+  };
+
+  const handleConfirmClearStorage = () => {
     clearEmployeesFromStorage(periodId);
     onEmployeesUpdated([]);
     setUploadStatus({
       type: 'idle',
       message: `🗑️ ລຶບຂໍ້ມູນທ້ອງຖິ່ນສຳລັບເດືອນ ${periodId} ແລ້ວ (Cleared local storage)`,
     });
+    setIsClearModalOpen(false);
+    showToast(`🗑️ ລຶບຂໍ້ມູນເດືອນ ${periodId} ອອກຈາກເຄື່ອງຮຽບຮ້ອຍແລ້ວ`, 'info', 4000);
   };
 
   const [capturingEmp, setCapturingEmp] = useState<EmployeeRecord | null>(null);
@@ -297,7 +300,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
 
               <button
-                onClick={handleClearStorage}
+                onClick={handleOpenClearModal}
                 aria-label={`ລຶບຂໍ້ມູນທ້ອງຖິ່ນສຳລັບເດືອນ ${periodId}`}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-1 bg-red-950/80 hover:bg-red-900 text-red-200 text-xs font-medium px-3 py-2 rounded-lg transition border border-red-800/60 cursor-pointer min-h-[38px] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                 title="Clear current period storage"
@@ -723,6 +726,71 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Custom Confirmation Modal for Clear Storage */}
+      {isClearModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-dialog-title"
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setIsClearModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-[#161d2b] border border-slate-700/80 rounded-2xl p-6 shadow-2xl shadow-black/70 text-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top accent line */}
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-600 via-rose-500 to-amber-500" />
+
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-red-400 shrink-0">
+                <AlertTriangle className="w-6 h-6" aria-hidden="true" />
+              </div>
+              <div className="flex-1">
+                <h3 id="clear-dialog-title" className="text-base sm:text-lg font-bold text-white flex items-center justify-between">
+                  <span>ຢືນຢັນການລຶບຂໍ້ມູນ?</span>
+                  <button
+                    onClick={() => setIsClearModalOpen(false)}
+                    className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                    aria-label="ປິດ"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນທ້ອງຖິ່ນສຳລັບເດືອນ <span className="font-bold text-amber-300 font-mono">{periodId}</span> ({getPeriodInfo(periodId).displayMonthLao})?
+                </p>
+                <div className="mt-3 p-3 bg-red-950/40 border border-red-800/40 rounded-xl text-[11px] sm:text-xs text-red-200/90 leading-relaxed">
+                  ⚠️ ນີ້ຈະລຶບຂໍ້ມູນເງິນເດືອນທີ່ອັບໂຫຼດໄວ້ (ຮວມທັງສະຖານະ <span className="text-[#25D366] font-semibold">"ສົ່ງແລ້ວ"</span>) ອອກຈາກເຄື່ອງນີ້ ແລະ ບໍ່ສາມາດກູ້ຄືນໄດ້.
+                  <div className="text-[10px] text-slate-400 mt-1 italic">
+                    (This will delete the uploaded payroll data and sent statuses from this device. It cannot be undone.)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsClearModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer min-h-[40px]"
+              >
+                ຍົກເລີກ (Cancel)
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearStorage}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-950 transition active:scale-[0.98] cursor-pointer min-h-[40px]"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>ລຶບຂໍ້ມູນ (Delete)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global Toast Banner */}
       {toast && (
