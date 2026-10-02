@@ -47,18 +47,39 @@ export async function captureElementToDataUrl(element: HTMLElement): Promise<str
   }
 }
 
+import { Capacitor } from '@capacitor/core';
+import { Clipboard as CapClipboard } from '@capacitor/clipboard';
+import { Share as CapShare } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+
 /**
  * Safely copies an image Blob to the user's system clipboard.
- * Works on modern browsers (Android Chrome, iOS Safari 13.4+, Desktop Chrome/Edge/Safari).
+ * Supports Capacitor Native Clipboard (base64 image), Web ClipboardItem, and Data URLs.
  */
 export async function copyBlobToClipboard(blob: Blob): Promise<boolean> {
-  if (!navigator.clipboard) {
-    console.warn('Clipboard API is not available on this environment');
-    return false;
+  // 1. Try Capacitor Native Clipboard Plugin (Mobile Android/iOS)
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const dataUrl = await base64Promise;
+      
+      await CapClipboard.write({
+        image: dataUrl
+      });
+      console.log('Successfully copied image using Capacitor Native Clipboard');
+      return true;
+    } catch (nativeErr) {
+      console.warn('Capacitor Native Clipboard write failed, trying web fallback:', nativeErr);
+    }
   }
 
-  // Modern Async Clipboard API with ClipboardItem
-  if (typeof ClipboardItem !== 'undefined') {
+  // 2. Modern Async Web Clipboard API with ClipboardItem (Desktop & Modern Mobile Web)
+  if (typeof navigator !== 'undefined' && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
     try {
       const mimeType = blob.type || 'image/png';
       const item = new ClipboardItem({ [mimeType]: blob });
@@ -88,17 +109,54 @@ export function downloadImageBlob(blob: Blob, filename: string): void {
 }
 
 /**
- * Shares an image Blob using the device's native Share Sheet (if supported)
+ * Shares an image Blob using Capacitor Native Share or Web Share API
  */
-export async function shareImageBlob(
+export async function sharePayslipImageFile(
   blob: Blob,
   filename: string,
   title: string,
   text: string
 ): Promise<boolean> {
+  // 1. Try Capacitor Native File Save & Share (Best on Android & iOS)
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          // extract base64 data without prefix for Filesystem.writeFile
+          const base64Data = res.split(',')[1] || res;
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const base64Data = await base64Promise;
+
+      const fileResult = await Filesystem.writeFile({
+        path: filename,
+        data: base64Data,
+        directory: Directory.Cache
+      });
+
+      if (fileResult.uri) {
+        await CapShare.share({
+          title,
+          text,
+          url: fileResult.uri,
+          dialogTitle: 'ສົ່ງໃບເງິນເດືອນຜ່ານ WhatsApp'
+        });
+        return true;
+      }
+    } catch (shareErr) {
+      console.warn('Native Filesystem/Share failed, falling back:', shareErr);
+    }
+  }
+
+  // 2. Web Share API fallback (e.g. Chrome Mobile)
   try {
     const file = new File([blob], filename, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title,
         text,
@@ -108,9 +166,10 @@ export async function shareImageBlob(
     }
   } catch (error) {
     if ((error as Error).name !== 'AbortError') {
-      console.warn('Native share failed:', error);
+      console.warn('Web share failed:', error);
     }
   }
+
   return false;
 }
 

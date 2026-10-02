@@ -7,7 +7,8 @@ import {
   captureElementToBlob,
   copyBlobToClipboard,
   downloadImageBlob,
-  getPayslipFilename
+  getPayslipFilename,
+  sharePayslipImageFile
 } from '../utils/payslipImage';
 
 interface PayslipModalProps {
@@ -54,14 +55,29 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
 
     try {
       let copied = false;
+      let blob: Blob | null = null;
+      const filename = getPayslipFilename(employee, periodId);
       const slipEl =
         (containerRef.current?.querySelector('#payslip-document') as HTMLElement) ||
         containerRef.current;
 
       if (slipEl) {
-        const blob = await captureElementToBlob(slipEl);
+        blob = await captureElementToBlob(slipEl);
         if (blob) {
           copied = await copyBlobToClipboard(blob);
+        }
+      }
+
+      if (blob) {
+        const shared = await sharePayslipImageFile(
+          blob,
+          filename,
+          `ໃບແຈ້ງເງິນເດືອນ ${employee.name}`,
+          `ໃບແຈ້ງເງິນເດືອນ ປະຈຳເດືອນ ${periodId} ຂອງ ${employee.name}`
+        );
+        if (shared) {
+          showModalToast(`✅ ເປີດການແບ່ງປັນຮູບໃບເງິນເດືອນສຳເລັດແລ້ວ!`, 'success');
+          return;
         }
       }
 

@@ -23,7 +23,12 @@ import { openWhatsAppPayslip } from '../utils/whatsapp';
 import { clearEmployeesFromStorage, exportJsonBackup, saveEmployeesToStorage } from '../utils/storage';
 import { formatNum, getPeriodInfo } from '../utils/formatters';
 import { Payslip } from './Payslip';
-import { captureElementToBlob, copyBlobToClipboard } from '../utils/payslipImage';
+import {
+  captureElementToBlob,
+  copyBlobToClipboard,
+  sharePayslipImageFile,
+  getPayslipFilename
+} from '../utils/payslipImage';
 
 interface AdminDashboardProps {
   periodId: string;
@@ -199,6 +204,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     let copied = false;
     let blob: Blob | null = null;
+    const filename = getPayslipFilename(emp, periodId);
 
     try {
       // Give offscreen component time to mount and render fully
@@ -225,6 +231,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
     onEmployeesUpdated(updated);
     saveEmployeesToStorage(periodId, updated);
+
+    // If native platform and blob was generated, also offer direct native share with image attached!
+    if (blob) {
+      const shared = await sharePayslipImageFile(
+        blob,
+        filename,
+        `ໃບແຈ້ງເງິນເດືອນ ${emp.name}`,
+        `ໃບແຈ້ງເງິນເດືອນ ປະຈຳເດືອນ ${periodId} ຂອງ ${emp.name}`
+      );
+      if (shared) {
+        showToast(`✅ ເປີດການແບ່ງປັນຮູບໃບເງິນເດືອນສຳເລັດແລ້ວ!`, 'success', 5000);
+        return;
+      }
+    }
 
     if (copied) {
       showToast(

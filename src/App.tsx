@@ -13,6 +13,7 @@ import {
   copyBlobToClipboard,
   downloadImageBlob,
   getPayslipFilename,
+  sharePayslipImageFile
 } from './utils/payslipImage';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -50,14 +51,29 @@ export default function App() {
 
     try {
       let copied = false;
+      let blob: Blob | null = null;
+      const filename = getPayslipFilename(selectedEmployee, periodId);
       const slipEl =
         (document.querySelector('#panel-slip #payslip-document') as HTMLElement) ||
         (document.querySelector('#panel-slip') as HTMLElement);
 
       if (slipEl) {
-        const blob = await captureElementToBlob(slipEl);
+        blob = await captureElementToBlob(slipEl);
         if (blob) {
           copied = await copyBlobToClipboard(blob);
+        }
+      }
+
+      if (blob) {
+        const shared = await sharePayslipImageFile(
+          blob,
+          filename,
+          `ໃບແຈ້ງເງິນເດືອນ ${selectedEmployee.name}`,
+          `ໃບແຈ້ງເງິນເດືອນ ປະຈຳເດືອນ ${periodId} ຂອງ ${selectedEmployee.name}`
+        );
+        if (shared) {
+          showToast(`✅ ເປີດການແບ່ງປັນຮູບໃບເງິນເດືອນສຳເລັດແລ້ວ!`, 'success');
+          return;
         }
       }
 
