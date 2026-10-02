@@ -194,22 +194,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setCapturingEmp(emp);
     showToast(`⏳ ກຳລັງສ້າງຮູບໃບເງິນເດືອນຂອງ ${emp.name}...`, 'info', 10000);
 
-    // Give offscreen component time to mount and render
-    await new Promise((resolve) => setTimeout(resolve, 80));
-
     let copied = false;
-    if (offscreenSlipRef.current) {
-      const slipEl =
-        (offscreenSlipRef.current.querySelector('#payslip-document') as HTMLElement) ||
-        offscreenSlipRef.current;
-      const blob = await captureElementToBlob(slipEl);
-      if (blob) {
-        copied = await copyBlobToClipboard(blob);
-      }
-    }
+    let blob: Blob | null = null;
 
-    setCapturingEmp(null);
-    setCapturingEmpId(null);
+    try {
+      // Give offscreen component time to mount and render fully
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      if (offscreenSlipRef.current) {
+        const slipEl =
+          (offscreenSlipRef.current.querySelector('#payslip-document') as HTMLElement) ||
+          offscreenSlipRef.current;
+        blob = await captureElementToBlob(slipEl);
+        if (blob) {
+          copied = await copyBlobToClipboard(blob);
+        }
+      }
+    } catch (err) {
+      console.error('Error generating/copying payslip image:', err);
+    } finally {
+      setCapturingEmp(null);
+      setCapturingEmpId(null);
+    }
 
     const updated = employees.map((item) =>
       item.id === emp.id ? { ...item, payslip_sent: true } : item
@@ -227,7 +233,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       showToast(`🚀 ກຳລັງເປີດ WhatsApp...`, 'info', 4000);
     }
 
-    openWhatsAppPayslip(emp, periodId);
+    try {
+      openWhatsAppPayslip(emp, periodId, true);
+    } catch (err) {
+      console.error('Failed to open WhatsApp:', err);
+    }
   };
 
   return (

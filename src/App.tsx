@@ -70,7 +70,10 @@ export default function App() {
         showToast('🚀 ກຳລັງເປີດ WhatsApp...', 'info');
       }
 
-      openWhatsAppPayslip(selectedEmployee, periodId);
+      openWhatsAppPayslip(selectedEmployee, periodId, true);
+    } catch (err) {
+      console.error('Failed to prepare payslip image for WhatsApp:', err);
+      openWhatsAppPayslip(selectedEmployee, periodId, true);
     } finally {
       setIsProcessingWhatsApp(false);
     }

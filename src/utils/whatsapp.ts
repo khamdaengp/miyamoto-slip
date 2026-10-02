@@ -51,20 +51,24 @@ export function buildWhatsAppMessage(employee: EmployeeRecord, periodId: string)
   return msg;
 }
 
-export function openWhatsAppPayslip(employee: EmployeeRecord, periodId: string): boolean {
+export function openWhatsAppPayslip(employee: EmployeeRecord, periodId: string, includeText: boolean = true): boolean {
   if (!employee.phone || employee.phone.trim() === '') {
     alert('ບໍ່ມີເບີໂທສຳລັບພະນັກງານນີ້ (No phone number found for this employee)');
     return false;
   }
 
   const phoneNum = normalizeLaoPhone(employee.phone);
-  const msg = buildWhatsAppMessage(employee, periodId);
-  const encodedMsg = encodeURIComponent(msg);
-  const waWebUrl = `https://wa.me/${phoneNum}?text=${encodedMsg}`;
+  const msg = includeText ? buildWhatsAppMessage(employee, periodId) : '';
+  const encodedMsg = msg ? encodeURIComponent(msg) : '';
+  const waWebUrl = encodedMsg 
+    ? `https://wa.me/${phoneNum}?text=${encodedMsg}` 
+    : `https://wa.me/${phoneNum}`;
 
   // Native mobile app handling (Capacitor Android / iOS)
   if (Capacitor.isNativePlatform()) {
-    const waNativeUrl = `whatsapp://send?phone=${phoneNum}&text=${encodedMsg}`;
+    const waNativeUrl = encodedMsg 
+      ? `whatsapp://send?phone=${phoneNum}&text=${encodedMsg}`
+      : `whatsapp://send?phone=${phoneNum}`;
     
     // Trigger native app intent via link
     const link = document.createElement('a');

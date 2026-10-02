@@ -71,7 +71,10 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({
         showModalToast('🚀 ກຳລັງເປີດ WhatsApp...', 'info');
       }
 
-      openWhatsAppPayslip(employee, periodId);
+      openWhatsAppPayslip(employee, periodId, true);
+    } catch (err) {
+      console.error('Failed to prepare payslip image for WhatsApp:', err);
+      openWhatsAppPayslip(employee, periodId, true);
     } finally {
       setIsProcessingWhatsApp(false);
     }

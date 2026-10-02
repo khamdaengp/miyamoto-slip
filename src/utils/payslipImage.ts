@@ -10,12 +10,23 @@ export async function captureElementToBlob(element: HTMLElement): Promise<Blob |
       pixelRatio: 2,
       backgroundColor: '#ffffff',
       cacheBust: true,
-      skipFonts: false,
+      skipFonts: true, // Prevents security errors with external Google Fonts stylesheet rules
     });
     return blob;
   } catch (error) {
     console.error('Failed to capture payslip element to blob:', error);
-    return null;
+    try {
+      // Fallback capture without cache busting
+      const fallbackBlob = await toBlob(element, {
+        pixelRatio: 1.5,
+        backgroundColor: '#ffffff',
+        skipFonts: true,
+      });
+      return fallbackBlob;
+    } catch (fallbackErr) {
+      console.error('Fallback capture also failed:', fallbackErr);
+      return null;
+    }
   }
 }
 
