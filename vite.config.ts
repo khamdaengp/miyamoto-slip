@@ -6,4 +6,15 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: './', // Ensures assets are loaded properly in Electron file:// protocol
+  server: {
+    watch: {
+      ignored: [
+        '**/android/**',
+        '**/*.xlsx',
+        '**/*.xls',
+        '**/*.pdf',
+        '**/*.apk',
+      ],
+    },
+  },
 });
