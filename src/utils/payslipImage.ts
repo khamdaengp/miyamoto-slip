@@ -52,19 +52,25 @@ export async function captureElementToDataUrl(element: HTMLElement): Promise<str
  * Works on modern browsers (Android Chrome, iOS Safari 13.4+, Desktop Chrome/Edge/Safari).
  */
 export async function copyBlobToClipboard(blob: Blob): Promise<boolean> {
-  if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
-    console.warn('ClipboardItem API is not available on this device/browser');
+  if (!navigator.clipboard) {
+    console.warn('Clipboard API is not available on this environment');
     return false;
   }
 
-  try {
-    const item = new ClipboardItem({ [blob.type || 'image/png']: blob });
-    await navigator.clipboard.write([item]);
-    return true;
-  } catch (error) {
-    console.warn('navigator.clipboard.write failed:', error);
-    return false;
+  // Modern Async Clipboard API with ClipboardItem
+  if (typeof ClipboardItem !== 'undefined') {
+    try {
+      const mimeType = blob.type || 'image/png';
+      const item = new ClipboardItem({ [mimeType]: blob });
+      await navigator.clipboard.write([item]);
+      console.log('Successfully copied image to clipboard via ClipboardItem');
+      return true;
+    } catch (error) {
+      console.warn('navigator.clipboard.write([ClipboardItem]) error:', error);
+    }
   }
+
+  return false;
 }
 
 /**
